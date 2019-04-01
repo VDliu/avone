@@ -1,10 +1,13 @@
 package com.av.myplayer;
 
+import android.util.Log;
+
 /**
  * Created by yangw on 2018-1-31.
  */
 
 public class Demo {
+    private static final String TAG = "Demo";
 
     static {
         System.loadLibrary("native-lib");
@@ -17,6 +20,14 @@ public class Demo {
         System.loadLibrary("swscale");
     }
 
+    public void onError(int code,String message){
+        Log.e(TAG, "onError: " + "code = " + code + ",message = " +message );
+    }
+
     public native String stringFromJNI();
+    public native void createNativeThread();
+    public native void createMutextNativeThread();
+    public native void nativeInvokeJava();
+    public native void nativeInvokeJavaInChildThread();
 
 }

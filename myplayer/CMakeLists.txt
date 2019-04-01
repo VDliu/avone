@@ -43,6 +43,7 @@ set_target_properties( postproc
 add_library(
              native-lib
              SHARED
+             src/main/cpp/androidplatform/JavaListener.cpp
              src/main/cpp/native-lib.cpp )
 
 

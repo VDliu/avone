@@ -8,10 +8,6 @@ import com.av.myplayer.Demo;
 
 public class MainActivity extends AppCompatActivity {
 
-    static {
-        System.loadLibrary("native-lib");
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -19,6 +15,10 @@ public class MainActivity extends AppCompatActivity {
         Demo demo = new Demo();
 
         TextView tv = (TextView) findViewById(R.id.sample_text);
+        //demo.createNativeThread();
+      //  demo.createMutextNativeThread();
+       // demo.nativeInvokeJava();
+        demo.nativeInvokeJavaInChildThread();
         tv.setText(demo.stringFromJNI());
     }
 }
