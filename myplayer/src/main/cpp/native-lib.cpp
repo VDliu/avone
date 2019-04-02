@@ -1,7 +1,8 @@
 #include <jni.h>
 #include <string>
-#include <android/log.h>
 #include "pthread.h"
+#include "androidplatform/MyLog.h"
+#include "androidplatform/callback/TestErrorCallBack.h"
 
 pthread_t pthread;
 
@@ -9,12 +10,6 @@ extern "C"
 {
     #include <libavformat/avformat.h>
 }
-
-
-
-
-
-#define LOGI(FORMAT,...) __android_log_print(ANDROID_LOG_INFO,"MY_PLAYER",FORMAT,##__VA_ARGS__);
 
 void* normalCallBack(void *){
     LOGI("normall CallBack...");
@@ -60,7 +55,7 @@ Java_com_av_myplayer_Demo_createNativeThread(JNIEnv *env, jobject instance) {
 }
 
 
-//mutex thread demo ---------------------------------------------------------------------------------------------------------------------------------------------------------//
+//mutex thread demo,native调用java方法，c++生产者消费者模型 ---------------------------------------------------------------------------------------------------------------------------------------------------------//
 
 
 #include "queue"
@@ -121,14 +116,15 @@ Java_com_av_myplayer_Demo_createMutextNativeThread(JNIEnv *env, jobject instance
     pthread_create(&pthread_customer, nullptr,callBackForCustomer, nullptr);
 }
 
-#include "androidplatform/JavaListener.h"
+
+
 JavaVM *local_jvm;
-JavaListener *javaListener;
 pthread_t child_thread;
 
 void* childThreadCallBack(void *call){
-    JavaListener * javaListener1 = (JavaListener *)call;
-    javaListener1->onError(0,200,"call java in child thread");
+    TestErrorCallBack * callBack = (TestErrorCallBack *)call;
+    callBack->onError(JavaListener::CHILD_THREAD,100,"call java in child thread");
+    delete callBack;
     pthread_exit(&child_thread);
 }
 
@@ -136,9 +132,10 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_av_myplayer_Demo_nativeInvokeJava(JNIEnv *env, jobject instance) {
 
-      //env->NewGlobalRef(instance)  将obj转化为全局的
-    javaListener = new JavaListener(local_jvm,env,env->NewGlobalRef(instance));
-    javaListener->onError(1,100,"hello main");
+    //env->NewGlobalRef(instance)  将obj转化为全局的
+    TestErrorCallBack *callBack = new TestErrorCallBack(local_jvm,env,env->NewGlobalRef(instance));
+    callBack->onError(JavaListener::MAIN_THREAD,200,"call java in main thread");
+    delete callBack;
 }
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *jvm, void* reserved){
@@ -155,8 +152,36 @@ JNIEXPORT void JNICALL
 Java_com_av_myplayer_Demo_nativeInvokeJavaInChildThread(JNIEnv *env, jobject instance) {
 
     //env->NewGlobalRef(instance)  将obj转化为全局的
-    javaListener = new JavaListener(local_jvm,env,env->NewGlobalRef(instance));
-    pthread_create(&child_thread, nullptr,childThreadCallBack,javaListener);
+    TestErrorCallBack *callBack = new TestErrorCallBack(local_jvm,env,env->NewGlobalRef(instance));
+    pthread_create(&child_thread, nullptr,childThreadCallBack,callBack);
+}
 
+//------------音频解码------------------------------------------------------------------------------------------------//
+#include "common/MyFFmpeg.h"
+MyFFmpeg *myFFmpeg = NULL;
+PrepareCallBack *prepareCallBack;
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_av_myplayer_player_MyPlayer_player_1prepare(JNIEnv *env, jobject instance,
+                                                     jstring source_) {
+    const char *source = env->GetStringUTFChars(source_, 0);
+    if (myFFmpeg == NULL){
+        if (prepareCallBack == NULL){
+            prepareCallBack = new PrepareCallBack(local_jvm,env,env->NewGlobalRef(instance));
+        }
+        myFFmpeg = new MyFFmpeg(prepareCallBack,source);
+    }
+    myFFmpeg->prepare();
+
+   // env->ReleaseStringUTFChars(source_, source);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_av_myplayer_player_MyPlayer_player_1start(JNIEnv *env, jobject instance) {
+    if(myFFmpeg != NULL){
+        myFFmpeg->start();
+    }
 
 }

@@ -7,24 +7,20 @@ public:
     static const int MAIN_THREAD ;
     static const int CHILD_THREAD;
 
-private:
+protected:
     JavaVM *jvm = nullptr;
     _JNIEnv *jenv = nullptr;
-    jobject jobj;
+    jobject jobj ;
     jmethodID jmid;
+    bool isOk = false;
 
 public:
     JavaListener(JavaVM *vm, _JNIEnv *env, jobject obj);
     ~JavaListener();
 
-    /**
-     * 1:主线程
-     * 0：子线程
-     * @param type
-     * @param code   java 函数参数
-     * @param msg    java 函数参数
-     */
-    void onError(int type, int code, const char *msg);
+public:
+    //自类自行实现获取jmethod方法
+     virtual void getMethodId(const char* methodName,const char* methodSignature);
 };
 
 

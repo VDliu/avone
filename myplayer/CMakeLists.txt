@@ -43,7 +43,11 @@ set_target_properties( postproc
 add_library(
              native-lib
              SHARED
-             src/main/cpp/androidplatform/JavaListener.cpp
+             src/main/cpp/common/MyAudio.cpp
+             src/main/cpp/common/MyFFmpeg.cpp
+             src/main/cpp/androidplatform/base/JavaListener.cpp
+             src/main/cpp/androidplatform/callback/PrepareCallBack.cpp
+             src/main/cpp/androidplatform/callback/TestErrorCallBack.cpp
              src/main/cpp/native-lib.cpp )
 
 

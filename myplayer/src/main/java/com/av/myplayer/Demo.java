@@ -2,22 +2,18 @@ package com.av.myplayer;
 
 import android.util.Log;
 
-/**
- * Created by yangw on 2018-1-31.
- */
-
 public class Demo {
     private static final String TAG = "Demo";
 
     static {
-        System.loadLibrary("native-lib");
-        System.loadLibrary("avcodec");
-        System.loadLibrary("avfilter");
-        System.loadLibrary("avformat");
-        System.loadLibrary("avutil");
-        System.loadLibrary("swresample");
-        System.loadLibrary("postproc");
-        System.loadLibrary("swscale");
+//        System.loadLibrary("native-lib");
+//        System.loadLibrary("avcodec");
+//        System.loadLibrary("avfilter");
+//        System.loadLibrary("avformat");
+//        System.loadLibrary("avutil");
+//        System.loadLibrary("swresample");
+//        System.loadLibrary("postproc");
+//        System.loadLibrary("swscale");
     }
 
     public void onError(int code,String message){
