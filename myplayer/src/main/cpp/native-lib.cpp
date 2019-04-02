@@ -158,8 +158,10 @@ Java_com_av_myplayer_Demo_nativeInvokeJavaInChildThread(JNIEnv *env, jobject ins
 
 //------------音频解码------------------------------------------------------------------------------------------------//
 #include "common/MyFFmpeg.h"
+#include "common/PlayStatus.h"
 MyFFmpeg *myFFmpeg = NULL;
 PrepareCallBack *prepareCallBack;
+PlayStatus *playStatus = NULL;
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -170,7 +172,11 @@ Java_com_av_myplayer_player_MyPlayer_player_1prepare(JNIEnv *env, jobject instan
         if (prepareCallBack == NULL){
             prepareCallBack = new PrepareCallBack(local_jvm,env,env->NewGlobalRef(instance));
         }
-        myFFmpeg = new MyFFmpeg(prepareCallBack,source);
+
+        if (playStatus == NULL){
+            playStatus = new PlayStatus();
+        }
+        myFFmpeg = new MyFFmpeg(playStatus,prepareCallBack,source);
     }
     myFFmpeg->prepare();
 

@@ -1,10 +1,10 @@
 #include "MyFFmpeg.h"
 #include "../androidplatform/MyLog.h"
 
-MyFFmpeg::MyFFmpeg(PrepareCallBack *callBack, const char *url) {
+MyFFmpeg::MyFFmpeg(PlayStatus *playStatus,PrepareCallBack *callBack, const char *url) {
     this->callBack = callBack;
     this->url = url;
-
+    this->playStatus = playStatus;
 }
 
 void *decodeThreadCall(void *data) {
@@ -53,7 +53,7 @@ void MyFFmpeg::decodeFFmepg() {
         if (AVMEDIA_TYPE_AUDIO == avStream->codecpar->codec_type) {
             //找到了音频流
             if (myAudio == NULL) {
-                myAudio = new MyAudio(i, avStream->codecpar);
+                myAudio = new MyAudio(i, avStream->codecpar,this->playStatus);
             }
         }
     }
@@ -118,9 +118,7 @@ void MyFFmpeg::start() {
             if (avPacket->stream_index == myAudio->streamIndex) {
                 count++;
                 LOGE("this is the frame = %d",count);
-                av_packet_free(&avPacket);
-                av_free(avPacket);
-                avPacket = NULL;
+                 myAudio->queue->putAvPacket(avPacket);
             }else{//不是音频流
                 av_packet_free(&avPacket);
                 av_free(avPacket);
@@ -133,6 +131,20 @@ void MyFFmpeg::start() {
             avPacket = NULL;
             break;
         }
+    }
+
+    //模拟出队
+    while (myAudio->queue->getQueueSize() > 0)
+    {
+        AVPacket *packet = av_packet_alloc();
+        myAudio->queue->getAvPacket(packet);
+        av_packet_free(&packet);
+        av_free(packet);
+        packet = NULL;
+    }
+
+    {
+        LOGD("解码完成");
     }
 
 }

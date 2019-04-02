@@ -5,6 +5,7 @@
 #include "../androidplatform/callback/PrepareCallBack.h"
 #include "pthread.h"
 #include "MyAudio.h"
+#include "PlayStatus.h"
 
 extern "C"
 {
@@ -20,9 +21,10 @@ public:
 
     //音频
     MyAudio *myAudio = NULL;
+    PlayStatus *playStatus = NULL;
 
 public:
-    MyFFmpeg(PrepareCallBack *callBack, const char *url);
+    MyFFmpeg(PlayStatus *playStatus,PrepareCallBack *callBack, const char *url);
 
     ~MyFFmpeg();
 
