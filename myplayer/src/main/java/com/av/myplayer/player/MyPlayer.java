@@ -77,4 +77,6 @@ public class MyPlayer {
     private native void player_prepare(String source);
 
     private native void player_start();
+
+    public native void playPcm(String url);
 }

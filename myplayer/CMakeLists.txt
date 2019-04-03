@@ -68,5 +68,5 @@ target_link_libraries(
                        swresample
                        swscale
                        postproc
-
+                       OpenSLES
                        ${log-lib} )

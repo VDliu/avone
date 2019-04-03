@@ -21,4 +21,12 @@
         android:layout_marginTop="20dp"
         android:text="start" />
 
+    <Button
+        android:id="@+id/play_pcm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/start_btn"
+        android:layout_marginTop="20dp"
+        android:text="play_pcm" />
+
 </android.support.constraint.ConstraintLayout>

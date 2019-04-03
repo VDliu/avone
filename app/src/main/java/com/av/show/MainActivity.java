@@ -14,6 +14,7 @@ public class MainActivity extends AppCompatActivity {
 
     Button begin_btn;
     Button start_btn;
+    Button pcm_btn;
     private MyPlayer player;
 
     @Override
@@ -23,11 +24,20 @@ public class MainActivity extends AppCompatActivity {
 
         player = new MyPlayer();
         begin_btn = findViewById(R.id.begin_btn);
+        pcm_btn = findViewById(R.id.play_pcm);
+
         start_btn = findViewById(R.id.start_btn);
         start_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 player.start();
+            }
+        });
+
+        pcm_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                player.playPcm("/sdcard/mydream.pcm");
             }
         });
 

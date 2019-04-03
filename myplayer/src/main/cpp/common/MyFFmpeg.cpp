@@ -70,25 +70,26 @@ void MyFFmpeg::decodeFFmepg() {
         return;
     }
 
-    //7.找到解码器上下文
+    //7.找到音频流解码器上下文
     myAudio->codecContext = avcodec_alloc_context3(audioCodec);
     if (myAudio->codecContext == NULL) {
         LOGE("alloc av codeContext failed");
         return;
     }
 
-    //8.把AVCodecParameters 复制到AVCodecContext中
+    //8.把音频AVCodecParameters 复制到音频AVCodecContext中
     if (avcodec_parameters_to_context(myAudio->codecContext, myAudio->codecParameters) < 0) {
         LOGE("cope parameters to  codecContext failed");
         return;
     }
 
-    //9.打开解码器
+    //9.打开音频解码器
     if (avcodec_open2(myAudio->codecContext, audioCodec, NULL) < 0) {
         LOGE("open audio code failed");
         return;
     }
 
+    //回调到java层
     callBack->onprepared(JavaListener::CHILD_THREAD);
 }
 
@@ -118,7 +119,7 @@ void MyFFmpeg::start() {
             if (avPacket->stream_index == myAudio->streamIndex) {
                 count++;
                 LOGE("this is the frame = %d",count);
-                 myAudio->queue->putAvPacket(avPacket);
+                myAudio->queue->putAvPacket(avPacket);
             }else{//不是音频流
                 av_packet_free(&avPacket);
                 av_free(avPacket);
