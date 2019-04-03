@@ -242,7 +242,7 @@ int getPcmData(void **pcm)
 }
 
 //进入callback获取数据
-void pcmBufferCallBack(SLAndroidSimpleBufferQueueItf bf, void * context)
+void pcmBufferCallBack1(SLAndroidSimpleBufferQueueItf bf, void * context)
 {
    int size =  getPcmData(&buffer);
     // for streaming playback, replace this test by logic to find and fill the next buffer
@@ -330,7 +330,7 @@ Java_com_av_myplayer_player_MyPlayer_playPcm(JNIEnv *env, jobject instance, jstr
     // 创建缓冲区和回调函数
     (*pcmPlayerObject)->GetInterface(pcmPlayerObject, SL_IID_BUFFERQUEUE, &pcmBufferQueue);
     //缓冲接口回调
-    (*pcmBufferQueue)->RegisterCallback(pcmBufferQueue, pcmBufferCallBack, NULL);
+    (*pcmBufferQueue)->RegisterCallback(pcmBufferQueue, pcmBufferCallBack1, NULL);
     //获取音量接口
     (*pcmPlayerObject)->GetInterface(pcmPlayerObject, SL_IID_VOLUME, &pcmPlayerVolume);
 
@@ -340,7 +340,7 @@ Java_com_av_myplayer_player_MyPlayer_playPcm(JNIEnv *env, jobject instance, jstr
 
     //第六步----------------------------------------
     // 主动调用回调函数开始工作
-    pcmBufferCallBack(pcmBufferQueue, NULL);
+    pcmBufferCallBack1(pcmBufferQueue, NULL);
 
     env->ReleaseStringUTFChars(url_, url);
 }

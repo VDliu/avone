@@ -1,7 +1,7 @@
 #include "MyFFmpeg.h"
 #include "../androidplatform/MyLog.h"
 
-MyFFmpeg::MyFFmpeg(PlayStatus *playStatus,PrepareCallBack *callBack, const char *url) {
+MyFFmpeg::MyFFmpeg(PlayStatus *playStatus, PrepareCallBack *callBack, const char *url) {
     this->callBack = callBack;
     this->url = url;
     this->playStatus = playStatus;
@@ -29,9 +29,15 @@ void MyFFmpeg::decodeFFmepg() {
     if (pFormatCtx == NULL) {
         pFormatCtx = avformat_alloc_context();
     }
+
     //3.打开媒体资源
-    if (avformat_open_input(&pFormatCtx, url, NULL, NULL) != 0) {
-        LOGE("open resource  faild ::->,%s", url);
+    int errorCode = -1;
+    if ((errorCode = avformat_open_input(&pFormatCtx, url, NULL, NULL) ) && errorCode != 0) {
+        LOGE("open resource  faild ::->,%s,errorCode = %d", url,errorCode);
+        char * buf = (char *)malloc(1024);
+        av_strerror(-1, buf, 1024);
+        LOGE("error with msg = %s",buf);
+        free(buf);
         return;
     }
     //4.找到流信息
@@ -53,7 +59,7 @@ void MyFFmpeg::decodeFFmepg() {
         if (AVMEDIA_TYPE_AUDIO == avStream->codecpar->codec_type) {
             //找到了音频流
             if (myAudio == NULL) {
-                myAudio = new MyAudio(i, avStream->codecpar,this->playStatus);
+                myAudio = new MyAudio(i, avStream->codecpar, this->playStatus,avStream->codecpar->sample_rate);
             }
         }
     }
@@ -104,45 +110,49 @@ void MyFFmpeg::start() {
         LOGE("audio is null");
         return;
     }
-
+    //单独线程重采样
+    myAudio->play();
     int count = 0;
 
-    while (1) {
+    while (playStatus != NULL && !playStatus->exit) {
         /**
-         * AVPacket是FFmpeg中很重要的一个数据结构，它保存了解复用（demuxer)之后
+         * 1.AVPacket是FFmpeg中很重要的一个数据结构，它保存了解复用（demuxer)之后
          * 解码（decode）之前的数据（仍然是压缩后的数据）和关于这些数据的一些附加的信息，
          * 如显示时间戳（pts），解码时间戳（dts）,数据时长（duration），所在流媒体的索引（stream_index）等等。
+         *
+         * 2.AVFrame 为解压缩的原始数据
+         *
          */
         AVPacket *avPacket = av_packet_alloc();
         if (av_read_frame(pFormatCtx, avPacket) == 0) {
             //判断是否是音频流
             if (avPacket->stream_index == myAudio->streamIndex) {
                 count++;
-                LOGE("this is the frame = %d",count);
+                LOGE("this is the frame = %d", count);
                 myAudio->queue->putAvPacket(avPacket);
-            }else{//不是音频流
+            } else {//不是音频流
                 av_packet_free(&avPacket);
                 av_free(avPacket);
                 avPacket = NULL;
             }
 
-        } else {//avpack读取失败
+        } else {
             av_packet_free(&avPacket);
             av_free(avPacket);
             avPacket = NULL;
-            break;
+            while (playStatus != NULL && !playStatus->exit) {
+                //如果队列中还有数据，需要将数据取完以后再退出
+                if (myAudio->queue->getQueueSize() > 0) {
+                    continue;
+                } else {
+                    playStatus->exit = true;
+                    break;
+                }
+            }
         }
+
     }
 
-    //模拟出队
-    while (myAudio->queue->getQueueSize() > 0)
-    {
-        AVPacket *packet = av_packet_alloc();
-        myAudio->queue->getAvPacket(packet);
-        av_packet_free(&packet);
-        av_free(packet);
-        packet = NULL;
-    }
 
     {
         LOGD("解码完成");
