@@ -64,6 +64,7 @@ public class MyPlayer {
     public void start(){
         if (TextUtils.isEmpty(source)){
             MyLog.d(TAG,"source must not be empty");
+            return;
         }
 
         new Thread(new Runnable() {

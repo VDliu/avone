@@ -90,11 +90,5 @@ public class MainActivity extends AppCompatActivity {
                 //开始播放
             }
         });
-
-        //Demo demo = new Demo();
-        //demo.createNativeThread();
-        //demo.createMutextNativeThread();
-        // demo.nativeInvokeJava();
-        // demo.nativeInvokeJavaInChildThread();
     }
 }

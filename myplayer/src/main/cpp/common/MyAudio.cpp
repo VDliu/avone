@@ -124,6 +124,7 @@ int MyAudio::resampleAudio() {
             av_free(avFrame);
             avFrame = NULL;
             swr_free(&swr_ctx);
+            //每当冲采样成功一次，交给opensl es播放，播放完毕以后再继续重新采样
             break;
 
         } else {
