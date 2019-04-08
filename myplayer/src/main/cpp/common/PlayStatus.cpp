@@ -8,4 +8,5 @@
 
 PlayStatus::PlayStatus() {
     exit = false;
+    isLoading = false;
 }

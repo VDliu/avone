@@ -34,7 +34,7 @@ int AVPacketQueue::putAvPacket(AVPacket *avPacket) {
     pthread_mutex_lock(&mutex);
     if (avPacket != NULL) {
         avPackQueue.push(avPacket);
-        LOGD("insert a packet in queue ,total = %d",avPackQueue.size());
+       // LOGD("insert a packet in queue ,total = %d",avPackQueue.size());
         pthread_cond_signal(&cond);
     }
     pthread_mutex_unlock(&mutex);

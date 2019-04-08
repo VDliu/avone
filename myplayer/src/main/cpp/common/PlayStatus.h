@@ -12,6 +12,8 @@ class PlayStatus {
 public:
     bool exit;
 
+    bool isLoading;
+
 public:
     PlayStatus();
 

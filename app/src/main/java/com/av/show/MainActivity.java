@@ -9,7 +9,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
+import com.av.myplayer.listener.OnLoadListener;
+import com.av.myplayer.listener.OnPauseResumeListener;
 import com.av.myplayer.listener.PrepareListener;
 import com.av.myplayer.player.MyPlayer;
 
@@ -19,8 +22,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     Button begin_btn;
-    Button start_btn;
-    Button pcm_btn;
+    Button pause_btn;
+    Button resume_btn;
     private MyPlayer player;
     private final static String SDCARD = "/storage/emulated/0";
     private static String[] PERMISSIONS_STORAGE = {
@@ -55,23 +58,24 @@ public class MainActivity extends AppCompatActivity {
 
         player = new MyPlayer();
         begin_btn = findViewById(R.id.begin_btn);
-        pcm_btn = findViewById(R.id.play_pcm);
+        pause_btn = findViewById(R.id.pause_btn);
+        resume_btn = findViewById(R.id.play_resume);
 
-        start_btn = findViewById(R.id.start_btn);
-        start_btn.setOnClickListener(new View.OnClickListener() {
+        pause_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                player.start();
+                player.pause();
+
             }
         });
 
-        pcm_btn.setOnClickListener(new View.OnClickListener() {
+        resume_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-               // player.playPcm("/sdcard/mydream.pcm");
-                player.playPcm("/sdcard/mymusic.pcm");
+                player.resume();
             }
         });
+
 
         begin_btn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -88,6 +92,26 @@ public class MainActivity extends AppCompatActivity {
             public void onPrepared() {
                 Log.e(TAG, "native media is prepared" );
                 //开始播放
+                player.start();
+            }
+        });
+
+        player.setLoadListener(new OnLoadListener() {
+            @Override
+            public void onLoad(boolean loading) {
+                Log.e(TAG, "onLoad: loading = " +loading );
+
+            }
+        });
+
+        player.setPauseResumeListener(new OnPauseResumeListener() {
+            @Override
+            public void onPause(boolean pause) {
+                if (pause){
+                    Log.e(TAG, "onPause: 暂停中"  );
+                }else{
+                    Log.e(TAG, "onPause: 继续播放" );
+                }
             }
         });
     }

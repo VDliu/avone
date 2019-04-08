@@ -15,6 +15,7 @@ extern "C"
 class MyFFmpeg {
 public:
     PrepareCallBack *callBack = NULL;
+    OnLoadCallBack *loadCallBack = NULL;
     const char *url = NULL;
     pthread_t decode_thread;
     AVFormatContext * pFormatCtx = NULL;
@@ -24,7 +25,7 @@ public:
     PlayStatus *playStatus = NULL;
 
 public:
-    MyFFmpeg(PlayStatus *playStatus,PrepareCallBack *callBack, const char *url);
+    MyFFmpeg(PlayStatus *playStatus,PrepareCallBack *callBack, const char *url,OnLoadCallBack *loadCallBack);
 
     ~MyFFmpeg();
 
@@ -33,6 +34,10 @@ public:
     void decodeFFmepg();
 
     void start();
+
+    void pause();
+
+    void resume();
 };
 
 

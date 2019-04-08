@@ -11,22 +11,23 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"
-        android:text="begin" />
+        android:text="播放" />
+
 
     <Button
-        android:id="@+id/start_btn"
+        android:id="@+id/pause_btn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toBottomOf="@id/begin_btn"
         android:layout_marginTop="20dp"
-        android:text="start" />
+        android:text="pause" />
 
     <Button
-        android:id="@+id/play_pcm"
+        android:id="@+id/play_resume"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/start_btn"
+        app:layout_constraintTop_toBottomOf="@id/pause_btn"
         android:layout_marginTop="20dp"
-        android:text="play_pcm" />
+        android:text="resume" />
 
 </android.support.constraint.ConstraintLayout>

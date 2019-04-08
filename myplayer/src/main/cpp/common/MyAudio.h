@@ -10,6 +10,8 @@
 #include "AVPacketQueue.h"
 #include "PlayStatus.h"
 #include "pthread.h"
+#include "../androidplatform/callback/OnLoadCallBack.h"
+
 extern "C"
 {
     #include <libavformat/avformat.h>
@@ -26,6 +28,8 @@ public:
     AVCodecContext *codecContext = NULL;
     AVPacketQueue *queue = NULL;
     PlayStatus *playstatus = NULL;
+    //callback
+    OnLoadCallBack *loadCallBack;
 
     //重采样
     pthread_t pthread_play;
@@ -55,7 +59,7 @@ public:
     SLAndroidSimpleBufferQueueItf pcmBufferQueue = NULL;
 
 public:
-    MyAudio(int index,AVCodecParameters * codecPar,PlayStatus *playStatus,SLuint32 sampleRate);
+    MyAudio(int index,AVCodecParameters * codecPar,PlayStatus *playStatus,SLuint32 sampleRate,OnLoadCallBack *loadCallBack);
     ~MyAudio();
 
     void play();
@@ -64,6 +68,10 @@ public:
     void initOpenSLES();
 
     SLuint32 getCurrentSampleRateForOpensles(SLuint32 sample_rate);
+
+    void pause();
+
+    void resume();
 
 };
 

@@ -1,10 +1,12 @@
 #include "MyFFmpeg.h"
 #include "../androidplatform/MyLog.h"
+#include <unistd.h> // sleep 的头文件
 
-MyFFmpeg::MyFFmpeg(PlayStatus *playStatus, PrepareCallBack *callBack, const char *url) {
+MyFFmpeg::MyFFmpeg(PlayStatus *playStatus, PrepareCallBack *callBack, const char *url,OnLoadCallBack *loadCallBack) {
     this->callBack = callBack;
     this->url = url;
     this->playStatus = playStatus;
+    this->loadCallBack = loadCallBack;
 }
 
 void *decodeThreadCall(void *data) {
@@ -59,7 +61,7 @@ void MyFFmpeg::decodeFFmepg() {
         if (AVMEDIA_TYPE_AUDIO == avStream->codecpar->codec_type) {
             //找到了音频流
             if (myAudio == NULL) {
-                myAudio = new MyAudio(i, avStream->codecpar, this->playStatus,avStream->codecpar->sample_rate);
+                myAudio = new MyAudio(i, avStream->codecpar, this->playStatus,avStream->codecpar->sample_rate,loadCallBack);
             }
         }
     }
@@ -112,8 +114,8 @@ void MyFFmpeg::start() {
     }
     //单独线程重采样
     myAudio->play();
-    int count = 0;
-
+    //延时 模拟加载
+    sleep(5);
     while (playStatus != NULL && !playStatus->exit) {
         /**
          * 1.AVPacket是FFmpeg中很重要的一个数据结构，它保存了解复用（demuxer)之后
@@ -127,8 +129,6 @@ void MyFFmpeg::start() {
         if (av_read_frame(pFormatCtx, avPacket) == 0) {
             //判断是否是音频流
             if (avPacket->stream_index == myAudio->streamIndex) {
-                count++;
-                LOGE("this is the frame = %d", count);
                 myAudio->queue->putAvPacket(avPacket);
             } else {//不是音频流
                 av_packet_free(&avPacket);
@@ -158,4 +158,17 @@ void MyFFmpeg::start() {
         LOGD("解码完成");
     }
 
+}
+
+void MyFFmpeg::pause() {
+    if (myAudio != NULL){
+        myAudio->pause();
+    }
+
+}
+
+void MyFFmpeg::resume() {
+    if (myAudio != NULL){
+        myAudio->resume();
+    }
 }

@@ -14,7 +14,8 @@ extern "C"
 #include "common/MyFFmpeg.h"
 #include "common/PlayStatus.h"
 MyFFmpeg *myFFmpeg = NULL;
-PrepareCallBack *prepareCallBack;
+PrepareCallBack *prepareCallBack =NULL;
+OnLoadCallBack *loadCallBack =NULL;
 PlayStatus *playStatus = NULL;
 JavaVM *local_jvm;
 
@@ -28,10 +29,14 @@ Java_com_av_myplayer_player_MyPlayer_player_1prepare(JNIEnv *env, jobject instan
             prepareCallBack = new PrepareCallBack(local_jvm,env,env->NewGlobalRef(instance));
         }
 
+        if(loadCallBack == NULL){
+            loadCallBack = new OnLoadCallBack(local_jvm,env,env->NewGlobalRef(instance));
+        }
+
         if (playStatus == NULL){
             playStatus = new PlayStatus();
         }
-        myFFmpeg = new MyFFmpeg(playStatus,prepareCallBack,source);
+        myFFmpeg = new MyFFmpeg(playStatus,prepareCallBack,source,loadCallBack);
     }
     myFFmpeg->prepare();
 
@@ -56,4 +61,18 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *jvm, void* reserved){
 }
 
 
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_av_myplayer_player_MyPlayer_player_1pause(JNIEnv *env, jobject instance) {
+    if (myFFmpeg != NULL){
+        myFFmpeg->pause();
+    }
+}
 
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_av_myplayer_player_MyPlayer_player_1resume(JNIEnv *env, jobject instance) {
+    if (myFFmpeg != NULL){
+        myFFmpeg->resume();
+    }
+}

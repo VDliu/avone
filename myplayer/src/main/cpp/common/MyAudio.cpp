@@ -7,12 +7,14 @@
 #include "MyAudio.h"
 #include "../androidplatform/MyLog.h"
 
-MyAudio::MyAudio(int index, AVCodecParameters *codecPar, PlayStatus *playStatus,SLuint32 sampleRate) {
+MyAudio::MyAudio(int index, AVCodecParameters *codecPar, PlayStatus *playStatus,
+                 SLuint32 sampleRate, OnLoadCallBack *loadCallBack) {
     this->streamIndex = index;
     this->codecParameters = codecPar;
     this->queue = new AVPacketQueue(playStatus);
     this->playstatus = playStatus;
     this->sample_rate = sampleRate;
+    this->loadCallBack = loadCallBack;
     buffer = (uint8_t *) av_malloc(44100 * 2 * 2);
 }
 
@@ -40,6 +42,24 @@ void MyAudio::play() {
 
 int MyAudio::resampleAudio() {
     while (playstatus != NULL && !playstatus->exit) {
+
+        if (queue->getQueueSize() == 0) {
+            if (!playstatus->isLoading) {
+                loadCallBack->onLoading(JavaListener::CHILD_THREAD, true);
+                playstatus->isLoading = true;
+                LOGE("loading ----");
+            }
+            continue;
+
+        } else {
+            if (playstatus->isLoading) {
+                playstatus->isLoading = false;
+                loadCallBack->onLoading(JavaListener::CHILD_THREAD, false);
+                LOGE("loading ----ok");
+            }
+        }
+
+
         avPacket = av_packet_alloc();
         if (queue->getAvPacket(avPacket) != 0) {
             av_packet_free(&avPacket);
@@ -114,7 +134,7 @@ int MyAudio::resampleAudio() {
             data_size = nb * out_channels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
 
             //fwrite要写入内容的单字节数,要进行写入size字节的数据项的个数
-           // fwrite(buffer, 1, data_size, outFile);
+            // fwrite(buffer, 1, data_size, outFile);
 
             LOGD("data_size is %d", data_size);
             av_packet_free(&avPacket);
@@ -142,17 +162,16 @@ int MyAudio::resampleAudio() {
     return data_size;
 }
 
-void pcmBufferCallBack(SLAndroidSimpleBufferQueueItf bf, void * context)
-{
+void pcmBufferCallBack(SLAndroidSimpleBufferQueueItf bf, void *context) {
     MyAudio *audio = (MyAudio *) context;
-    if(audio != NULL)
-    {
+    if (audio != NULL) {
         //播放重采样数据
         int buffersize = audio->resampleAudio();
-        LOGE("bufferSize = %d,playstatus->exit = %d,queue size = %d",buffersize,audio->playstatus->exit,audio->queue->getQueueSize());
-        if(buffersize > 0)
-        {
-            (* audio-> pcmBufferQueue)->Enqueue( audio->pcmBufferQueue, (char *) audio-> buffer, buffersize);
+        LOGD("bufferSize = %d,playstatus->exit = %d,queue size = %d", buffersize,
+             audio->playstatus->exit, audio->queue->getQueueSize());
+        if (buffersize > 0) {
+            (*audio->pcmBufferQueue)->Enqueue(audio->pcmBufferQueue, (char *) audio->buffer,
+                                              buffersize);
         }
     }
 }
@@ -168,23 +187,25 @@ void MyAudio::initOpenSLES() {
     const SLInterfaceID mids[1] = {SL_IID_ENVIRONMENTALREVERB};
     const SLboolean mreq[1] = {SL_BOOLEAN_FALSE};
     result = (*engineEngine)->CreateOutputMix(engineEngine, &outputMixObject, 1, mids, mreq);
-    (void)result;
+    (void) result;
     result = (*outputMixObject)->Realize(outputMixObject, SL_BOOLEAN_FALSE);
-    (void)result;
-    result = (*outputMixObject)->GetInterface(outputMixObject, SL_IID_ENVIRONMENTALREVERB, &outputMixEnvironmentalReverb);
+    (void) result;
+    result = (*outputMixObject)->GetInterface(outputMixObject, SL_IID_ENVIRONMENTALREVERB,
+                                              &outputMixEnvironmentalReverb);
     if (SL_RESULT_SUCCESS == result) {
         result = (*outputMixEnvironmentalReverb)->SetEnvironmentalReverbProperties(
                 outputMixEnvironmentalReverb, &reverbSettings);
-        (void)result;
+        (void) result;
     }
     SLDataLocator_OutputMix outputMix = {SL_DATALOCATOR_OUTPUTMIX, outputMixObject};
     SLDataSink audioSnk = {&outputMix, 0};
 
 
     // 第三步，配置PCM格式信息
-    SLDataLocator_AndroidSimpleBufferQueue android_queue={SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE,2};
+    SLDataLocator_AndroidSimpleBufferQueue android_queue = {SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE,
+                                                            2};
 
-    SLDataFormat_PCM pcm={
+    SLDataFormat_PCM pcm = {
             SL_DATAFORMAT_PCM,//播放pcm格式的数据
             2,//2个声道（立体声）
             getCurrentSampleRateForOpensles(sample_rate),//44100hz的频率
@@ -199,28 +220,27 @@ void MyAudio::initOpenSLES() {
     const SLInterfaceID ids[1] = {SL_IID_BUFFERQUEUE};
     const SLboolean req[1] = {SL_BOOLEAN_TRUE};
 
-    (*engineEngine)->CreateAudioPlayer(engineEngine, &pcmPlayerObject, &slDataSource, &audioSnk, 1, ids, req);
+    (*engineEngine)->CreateAudioPlayer(engineEngine, &pcmPlayerObject, &slDataSource, &audioSnk, 1,
+                                       ids, req);
     //初始化播放器
     (*pcmPlayerObject)->Realize(pcmPlayerObject, SL_BOOLEAN_FALSE);
 
-//    得到接口后调用  获取Player接口
+//  得到接口后调用  获取Player接口
     (*pcmPlayerObject)->GetInterface(pcmPlayerObject, SL_IID_PLAY, &pcmPlayerPlay);
 
-//    注册回调缓冲区 获取缓冲队列接口
+//   注册回调缓冲区 获取缓冲队列接口
     (*pcmPlayerObject)->GetInterface(pcmPlayerObject, SL_IID_BUFFERQUEUE, &pcmBufferQueue);
     //缓冲接口回调
     (*pcmBufferQueue)->RegisterCallback(pcmBufferQueue, pcmBufferCallBack, this);
-//    获取播放状态接口
+//   获取播放状态接口
     (*pcmPlayerPlay)->SetPlayState(pcmPlayerPlay, SL_PLAYSTATE_PLAYING);
+
     pcmBufferCallBack(pcmBufferQueue, this);
-
-
 }
 
 SLuint32 MyAudio::getCurrentSampleRateForOpensles(SLuint32 sample_rate) {
     int rate = 0;
-    switch (sample_rate)
-    {
+    switch (sample_rate) {
         case 8000:
             rate = SL_SAMPLINGRATE_8;
             break;
@@ -261,8 +281,22 @@ SLuint32 MyAudio::getCurrentSampleRateForOpensles(SLuint32 sample_rate) {
             rate = SL_SAMPLINGRATE_192;
             break;
         default:
-            rate =  SL_SAMPLINGRATE_44_1;
+            rate = SL_SAMPLINGRATE_44_1;
     }
     return rate;
+}
+
+void MyAudio::pause() {
+
+    if (pcmPlayerPlay != NULL) {
+        (*pcmPlayerPlay)->SetPlayState(pcmPlayerPlay, SL_PLAYSTATE_PAUSED);
+    }
+
+}
+
+void MyAudio::resume() {
+    if (pcmPlayerPlay != NULL) {
+        (*pcmPlayerPlay)->SetPlayState(pcmPlayerPlay, SL_PLAYSTATE_PLAYING);
+    }
 }
 
