@@ -45,4 +45,12 @@
         android:layout_marginTop="20dp"
         android:text="::" />
 
+    <Button
+        android:id="@+id/seek_btn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/tv_time"
+        android:layout_marginTop="20dp"
+        android:text="seek" />
+
 </android.support.constraint.ConstraintLayout>

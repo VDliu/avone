@@ -13,6 +13,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.av.myplayer.bean.TimeInfoBean;
+import com.av.myplayer.listener.OnCompelet;
 import com.av.myplayer.listener.OnErrorListener;
 import com.av.myplayer.listener.OnLoadListener;
 import com.av.myplayer.listener.OnPauseResumeListener;
@@ -30,6 +31,8 @@ public class MainActivity extends AppCompatActivity {
     Button pause_btn;
     Button resume_btn;
     Button stop_btn;
+    Button seek_btn;
+
     TextView tv_time;
     private MyPlayer player;
     private final static String SDCARD = "/storage/emulated/0";
@@ -69,6 +72,13 @@ public class MainActivity extends AppCompatActivity {
         resume_btn = findViewById(R.id.play_resume);
         tv_time = findViewById(R.id.tv_time);
         stop_btn = findViewById(R.id.play_stop);
+        seek_btn = findViewById(R.id.seek_btn);
+        seek_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                player.seek(215);
+            }
+        });
 
         pause_btn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -151,6 +161,13 @@ public class MainActivity extends AppCompatActivity {
             public void onError(int code, String msg) {
                 Log.e(TAG, "onError: code =" +code + ",error message =" +msg );
 
+            }
+        });
+
+        player.setCompelet(new OnCompelet() {
+            @Override
+            public void compelet() {
+                Log.e(TAG, "compelet: --" );
             }
         });
     }
