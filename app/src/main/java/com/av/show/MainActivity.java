@@ -28,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
     Button begin_btn;
     Button pause_btn;
     Button resume_btn;
+    Button stop_btn;
     TextView tv_time;
     private MyPlayer player;
     private final static String SDCARD = "/storage/emulated/0";
@@ -66,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
         pause_btn = findViewById(R.id.pause_btn);
         resume_btn = findViewById(R.id.play_resume);
         tv_time = findViewById(R.id.tv_time);
+        stop_btn = findViewById(R.id.play_stop);
 
         pause_btn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -88,7 +90,8 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 //player.setSource("http://mpge.5nd.com/2015/2015-11-26/69708/1.mp3");
                // player.setSource("/storage/emulated/0/a.m4a");
-                player.setSource("/storage/emulated/0/test.mp3");
+               player.setSource("/storage/emulated/0/test.mp3");
+               // player.setSource("http://ngcdn004.cnr.cn/live/dszs/index.m3u8");
                 player.prepare();
             }
         });
@@ -99,6 +102,13 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, "native media is prepared" );
                 //开始播放
                 player.start();
+            }
+        });
+
+        stop_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                player.stop();
             }
         });
 

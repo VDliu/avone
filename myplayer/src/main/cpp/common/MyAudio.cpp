@@ -19,13 +19,7 @@ MyAudio::MyAudio(int index, AVCodecParameters *codecPar, PlayStatus *playStatus,
 }
 
 MyAudio::~MyAudio() {
-    if (queue != NULL) {
-        delete queue;
-    }
 
-    if (buffer != NULL) {
-        free(buffer);
-    }
 }
 
 
@@ -135,15 +129,14 @@ int MyAudio::resampleAudio() {
 
             //fwrite要写入内容的单字节数,要进行写入size字节的数据项的个数
             // fwrite(buffer, 1, data_size, outFile);
-            LOGE("avFrame--pts =%ld",avFrame->pts);
+            LOGE("avFrame--pts =%ld", avFrame->pts);
             now_time = avFrame->pts * av_q2d(time_base);
-            if(now_time < clock)
-            {
+            if (now_time < clock) {
                 now_time = clock;
             }
             clock = now_time;
 
-            LOGD("data_size is %d,cuurent time = %f", data_size,clock);
+            LOGD("data_size is %d,cuurent time = %f", data_size, clock);
             av_packet_free(&avPacket);
             av_free(avPacket);
             avPacket = NULL;
@@ -177,9 +170,8 @@ void pcmBufferCallBack(SLAndroidSimpleBufferQueueItf bf, void *context) {
         LOGD("bufferSize = %d,playstatus->exit = %d,queue size = %d", buffersize,
              audio->playstatus->exit, audio->queue->getQueueSize());
         if (buffersize > 0) {
-            audio->clock += buffersize / ((double)(audio->sample_rate * 2 * 2));
-            if(audio->clock - audio->last_time >= 0.1)
-            {
+            audio->clock += buffersize / ((double) (audio->sample_rate * 2 * 2));
+            if (audio->clock - audio->last_time >= 0.1) {
                 audio->last_time = audio->clock;
                 //回调应用层
                 audio->callJava->onCallTimeInfo(CHILD_THREAD, audio->clock, audio->duration);
@@ -311,6 +303,61 @@ void MyAudio::pause() {
 void MyAudio::resume() {
     if (pcmPlayerPlay != NULL) {
         (*pcmPlayerPlay)->SetPlayState(pcmPlayerPlay, SL_PLAYSTATE_PLAYING);
+    }
+}
+
+void MyAudio::stop() {
+    if (pcmPlayerPlay != NULL) {
+        //停止调用入队函数
+        (*pcmPlayerPlay)->SetPlayState(pcmPlayerPlay, SL_PLAYSTATE_STOPPED);
+    }
+}
+
+void MyAudio::release() {
+    stop();
+
+    if (queue != NULL) {
+        delete queue;
+    }
+
+    if (buffer != NULL) {
+        free(buffer);
+    }
+
+    //释放播放器
+    if (pcmPlayerObject != NULL) {
+        (*pcmPlayerObject)->Destroy(pcmPlayerObject);
+        pcmPlayerObject = NULL;
+        pcmPlayerPlay = NULL;
+        pcmBufferQueue = NULL;
+    }
+
+    //释放混音器
+    if (outputMixObject != NULL) {
+        (*outputMixObject)->Destroy(outputMixObject);
+        outputMixObject = NULL;
+        outputMixEnvironmentalReverb = NULL;
+    }
+
+    //释放引擎
+    if (engineObject != NULL) {
+        (*engineObject)->Destroy(engineObject);
+        engineObject = NULL;
+        engineEngine = NULL;
+    }
+
+    //释放解码上下文
+    if (codecContext != NULL) {
+        avcodec_free_context(&codecContext);
+        codecContext = NULL;
+    }
+
+    if (playstatus != NULL) {
+        playstatus = NULL;
+    }
+
+    if (callJava != NULL){
+        callJava = NULL;
     }
 }
 

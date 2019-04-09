@@ -60,18 +60,20 @@ public:
     SLAndroidSimpleBufferQueueItf pcmBufferQueue = NULL;
     //opensl es--------------
 
-    //时间显示------
+    //时间显示
     int duration = 0;
     AVRational time_base;
     double clock;//总的播放时长
     double now_time;//当前frame时间
     double last_time; //上一次调用时间
+    //时间显示
 
 public:
     MyAudio(int index,AVCodecParameters * codecPar,PlayStatus *playStatus,SLuint32 sampleRate,CallJava *callJava);
     ~MyAudio();
 
     void play();
+
     int resampleAudio();
 
     void initOpenSLES();
@@ -81,6 +83,10 @@ public:
     void pause();
 
     void resume();
+
+    void stop();
+
+    void release();
 
 };
 

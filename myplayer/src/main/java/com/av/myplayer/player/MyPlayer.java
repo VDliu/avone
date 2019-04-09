@@ -119,6 +119,15 @@ public class MyPlayer {
         }
     }
 
+    public void stop() {
+       new Thread(new Runnable() {
+           @Override
+           public void run() {
+               player_stop();
+           }
+       }).start();
+    }
+
     public void onCallTimeInfo(int currentTime, int totalTime) {
         if(timeInfoListener != null)
         {
@@ -132,9 +141,12 @@ public class MyPlayer {
         }
     }
 
+
+
     private native void player_prepare(String source);
 
     private native void player_start();
     private native void player_pause();
     private native void player_resume();
+    private native void player_stop();
 }

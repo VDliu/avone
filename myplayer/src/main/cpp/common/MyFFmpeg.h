@@ -25,6 +25,9 @@ public:
     MyAudio *myAudio = NULL;
     PlayStatus *playStatus = NULL;
 
+    pthread_mutex_t init_mutex;
+    bool exit ;
+
 public:
     MyFFmpeg(PlayStatus *playStatus, const char *url,CallJava *callJava);
 
@@ -39,6 +42,8 @@ public:
     void pause();
 
     void resume();
+
+    void release();
 };
 
 

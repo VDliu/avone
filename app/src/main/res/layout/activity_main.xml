@@ -29,11 +29,19 @@
         app:layout_constraintTop_toBottomOf="@id/pause_btn"
         android:layout_marginTop="20dp"
         android:text="resume" />
+
+    <Button
+        android:id="@+id/play_stop"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/play_resume"
+        android:layout_marginTop="20dp"
+        android:text="stop" />
     <TextView
         android:id="@+id/tv_time"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/play_resume"
+        app:layout_constraintTop_toBottomOf="@id/play_stop"
         android:layout_marginTop="20dp"
         android:text="::" />
 
