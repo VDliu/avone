@@ -2,11 +2,10 @@
 #include "../androidplatform/MyLog.h"
 #include <unistd.h> // sleep 的头文件
 
-MyFFmpeg::MyFFmpeg(PlayStatus *playStatus, PrepareCallBack *callBack, const char *url,OnLoadCallBack *loadCallBack) {
-    this->callBack = callBack;
+MyFFmpeg::MyFFmpeg(PlayStatus *playStatus, const char *url,CallJava *callJava) {
+    this->callJava = callJava;
     this->url = url;
     this->playStatus = playStatus;
-    this->loadCallBack = loadCallBack;
 }
 
 void *decodeThreadCall(void *data) {
@@ -61,7 +60,13 @@ void MyFFmpeg::decodeFFmepg() {
         if (AVMEDIA_TYPE_AUDIO == avStream->codecpar->codec_type) {
             //找到了音频流
             if (myAudio == NULL) {
-                myAudio = new MyAudio(i, avStream->codecpar, this->playStatus,avStream->codecpar->sample_rate,loadCallBack);
+                myAudio = new MyAudio(i, avStream->codecpar, this->playStatus,avStream->codecpar->sample_rate,callJava);
+                //总时长,换算成单位秒
+                myAudio->duration = pFormatCtx->duration / AV_TIME_BASE;
+                LOGE("duration = %d ",myAudio->duration );
+                myAudio->time_base = avStream->time_base;
+                //num=1,den = 14112000
+                LOGE("time base num=%d,den = %d",myAudio->time_base.num,myAudio->time_base.den);
             }
         }
     }
@@ -98,7 +103,7 @@ void MyFFmpeg::decodeFFmepg() {
     }
 
     //回调到java层
-    callBack->onprepared(JavaListener::CHILD_THREAD);
+    callJava->onCallParpared(CHILD_THREAD);
 }
 
 MyFFmpeg::~MyFFmpeg() {

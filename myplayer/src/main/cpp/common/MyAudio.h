@@ -11,6 +11,7 @@
 #include "PlayStatus.h"
 #include "pthread.h"
 #include "../androidplatform/callback/OnLoadCallBack.h"
+#include "../androidplatform/callback/CallJava.h"
 
 extern "C"
 {
@@ -29,7 +30,7 @@ public:
     AVPacketQueue *queue = NULL;
     PlayStatus *playstatus = NULL;
     //callback
-    OnLoadCallBack *loadCallBack;
+    CallJava *callJava;
 
     //重采样
     pthread_t pthread_play;
@@ -57,9 +58,17 @@ public:
 
     //缓冲器队列接口
     SLAndroidSimpleBufferQueueItf pcmBufferQueue = NULL;
+    //opensl es--------------
+
+    //时间显示------
+    int duration = 0;
+    AVRational time_base;
+    double clock;//总的播放时长
+    double now_time;//当前frame时间
+    double last_time; //上一次调用时间
 
 public:
-    MyAudio(int index,AVCodecParameters * codecPar,PlayStatus *playStatus,SLuint32 sampleRate,OnLoadCallBack *loadCallBack);
+    MyAudio(int index,AVCodecParameters * codecPar,PlayStatus *playStatus,SLuint32 sampleRate,CallJava *callJava);
     ~MyAudio();
 
     void play();

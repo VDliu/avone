@@ -14,8 +14,7 @@ extern "C"
 #include "common/MyFFmpeg.h"
 #include "common/PlayStatus.h"
 MyFFmpeg *myFFmpeg = NULL;
-PrepareCallBack *prepareCallBack =NULL;
-OnLoadCallBack *loadCallBack =NULL;
+CallJava *callJava;
 PlayStatus *playStatus = NULL;
 JavaVM *local_jvm;
 
@@ -25,18 +24,14 @@ Java_com_av_myplayer_player_MyPlayer_player_1prepare(JNIEnv *env, jobject instan
                                                      jstring source_) {
     const char *source = env->GetStringUTFChars(source_, 0);
     if (myFFmpeg == NULL){
-        if (prepareCallBack == NULL){
-            prepareCallBack = new PrepareCallBack(local_jvm,env,env->NewGlobalRef(instance));
-        }
-
-        if(loadCallBack == NULL){
-            loadCallBack = new OnLoadCallBack(local_jvm,env,env->NewGlobalRef(instance));
+        if (callJava == NULL){
+            callJava = new CallJava(local_jvm,env,&instance);
         }
 
         if (playStatus == NULL){
             playStatus = new PlayStatus();
         }
-        myFFmpeg = new MyFFmpeg(playStatus,prepareCallBack,source,loadCallBack);
+        myFFmpeg = new MyFFmpeg(playStatus,source,callJava);
     }
     myFFmpeg->prepare();
 

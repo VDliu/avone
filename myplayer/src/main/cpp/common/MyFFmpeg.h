@@ -6,6 +6,7 @@
 #include "pthread.h"
 #include "MyAudio.h"
 #include "PlayStatus.h"
+#include "../androidplatform/callback/CallJava.h"
 
 extern "C"
 {
@@ -14,8 +15,8 @@ extern "C"
 
 class MyFFmpeg {
 public:
-    PrepareCallBack *callBack = NULL;
-    OnLoadCallBack *loadCallBack = NULL;
+
+    CallJava *callJava;
     const char *url = NULL;
     pthread_t decode_thread;
     AVFormatContext * pFormatCtx = NULL;
@@ -25,7 +26,7 @@ public:
     PlayStatus *playStatus = NULL;
 
 public:
-    MyFFmpeg(PlayStatus *playStatus,PrepareCallBack *callBack, const char *url,OnLoadCallBack *loadCallBack);
+    MyFFmpeg(PlayStatus *playStatus, const char *url,CallJava *callJava);
 
     ~MyFFmpeg();
 

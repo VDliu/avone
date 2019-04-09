@@ -8,13 +8,13 @@
 #include "../androidplatform/MyLog.h"
 
 MyAudio::MyAudio(int index, AVCodecParameters *codecPar, PlayStatus *playStatus,
-                 SLuint32 sampleRate, OnLoadCallBack *loadCallBack) {
+                 SLuint32 sampleRate, CallJava *callJava) {
     this->streamIndex = index;
     this->codecParameters = codecPar;
     this->queue = new AVPacketQueue(playStatus);
     this->playstatus = playStatus;
     this->sample_rate = sampleRate;
-    this->loadCallBack = loadCallBack;
+    this->callJava = callJava;
     buffer = (uint8_t *) av_malloc(44100 * 2 * 2);
 }
 
@@ -45,7 +45,7 @@ int MyAudio::resampleAudio() {
 
         if (queue->getQueueSize() == 0) {
             if (!playstatus->isLoading) {
-                loadCallBack->onLoading(JavaListener::CHILD_THREAD, true);
+                callJava->onCallLoad(CHILD_THREAD, true);
                 playstatus->isLoading = true;
                 LOGE("loading ----");
             }
@@ -54,7 +54,7 @@ int MyAudio::resampleAudio() {
         } else {
             if (playstatus->isLoading) {
                 playstatus->isLoading = false;
-                loadCallBack->onLoading(JavaListener::CHILD_THREAD, false);
+                callJava->onCallLoad(CHILD_THREAD, false);
                 LOGE("loading ----ok");
             }
         }
@@ -135,8 +135,15 @@ int MyAudio::resampleAudio() {
 
             //fwrite要写入内容的单字节数,要进行写入size字节的数据项的个数
             // fwrite(buffer, 1, data_size, outFile);
+            LOGE("avFrame--pts =%ld",avFrame->pts);
+            now_time = avFrame->pts * av_q2d(time_base);
+            if(now_time < clock)
+            {
+                now_time = clock;
+            }
+            clock = now_time;
 
-            LOGD("data_size is %d", data_size);
+            LOGD("data_size is %d,cuurent time = %f", data_size,clock);
             av_packet_free(&avPacket);
             av_free(avPacket);
             avPacket = NULL;
@@ -170,6 +177,13 @@ void pcmBufferCallBack(SLAndroidSimpleBufferQueueItf bf, void *context) {
         LOGD("bufferSize = %d,playstatus->exit = %d,queue size = %d", buffersize,
              audio->playstatus->exit, audio->queue->getQueueSize());
         if (buffersize > 0) {
+            audio->clock += buffersize / ((double)(audio->sample_rate * 2 * 2));
+            if(audio->clock - audio->last_time >= 0.1)
+            {
+                audio->last_time = audio->clock;
+                //回调应用层
+                audio->callJava->onCallTimeInfo(CHILD_THREAD, audio->clock, audio->duration);
+            }
             (*audio->pcmBufferQueue)->Enqueue(audio->pcmBufferQueue, (char *) audio->buffer,
                                               buffersize);
         }

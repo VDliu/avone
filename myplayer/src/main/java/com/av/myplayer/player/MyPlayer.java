@@ -2,8 +2,10 @@ package com.av.myplayer.player;
 
 import android.text.TextUtils;
 
+import com.av.myplayer.bean.TimeInfoBean;
 import com.av.myplayer.listener.OnLoadListener;
 import com.av.myplayer.listener.OnPauseResumeListener;
+import com.av.myplayer.listener.OnTimeInfoListener;
 import com.av.myplayer.listener.PrepareListener;
 import com.av.myplayer.myLog.MyLog;
 
@@ -15,6 +17,7 @@ public class MyPlayer {
     private PrepareListener prepareListener;
     private OnLoadListener loadListener;
     private OnPauseResumeListener pauseResumeListener;
+    private OnTimeInfoListener timeInfoListener;
 
     static {
         System.loadLibrary("native-lib");
@@ -26,6 +29,8 @@ public class MyPlayer {
         System.loadLibrary("postproc");
         System.loadLibrary("swscale");
     }
+
+    private TimeInfoBean timeBean;
 
     public MyPlayer() {
 
@@ -46,6 +51,10 @@ public class MyPlayer {
 
     public void setLoadListener(OnLoadListener loadListener) {
         this.loadListener = loadListener;
+    }
+
+    public void setTimeInfoListener(OnTimeInfoListener timeInfoListener) {
+        this.timeInfoListener = timeInfoListener;
     }
 
     public void onCallPrepared() {
@@ -94,8 +103,7 @@ public class MyPlayer {
 
     }
 
-    public void pause()
-    {
+    public void pause() {
         player_pause();
         if(pauseResumeListener != null)
         {
@@ -103,12 +111,24 @@ public class MyPlayer {
         }
     }
 
-    public void resume()
-    {
+    public void resume() {
         player_resume();
         if(pauseResumeListener != null)
         {
             pauseResumeListener.onPause(false);
+        }
+    }
+
+    public void onCallTimeInfo(int currentTime, int totalTime) {
+        if(timeInfoListener != null)
+        {
+            if(timeBean == null)
+            {
+                timeBean = new TimeInfoBean();
+            }
+            timeBean.setCurrentTime(currentTime);
+            timeBean.setTotalTime(totalTime);
+            timeInfoListener.onTimeInfo(timeBean);
         }
     }
 

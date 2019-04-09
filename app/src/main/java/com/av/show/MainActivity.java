@@ -9,12 +9,16 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.av.myplayer.bean.TimeInfoBean;
 import com.av.myplayer.listener.OnLoadListener;
 import com.av.myplayer.listener.OnPauseResumeListener;
+import com.av.myplayer.listener.OnTimeInfoListener;
 import com.av.myplayer.listener.PrepareListener;
 import com.av.myplayer.player.MyPlayer;
+import com.av.myplayer.utils.TimeUtils;
 
 import javax.security.auth.login.LoginException;
 
@@ -24,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
     Button begin_btn;
     Button pause_btn;
     Button resume_btn;
+    TextView tv_time;
     private MyPlayer player;
     private final static String SDCARD = "/storage/emulated/0";
     private static String[] PERMISSIONS_STORAGE = {
@@ -60,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
         begin_btn = findViewById(R.id.begin_btn);
         pause_btn = findViewById(R.id.pause_btn);
         resume_btn = findViewById(R.id.play_resume);
+        tv_time = findViewById(R.id.tv_time);
 
         pause_btn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -112,6 +118,20 @@ public class MainActivity extends AppCompatActivity {
                 }else{
                     Log.e(TAG, "onPause: 继续播放" );
                 }
+            }
+        });
+
+        player.setTimeInfoListener(new OnTimeInfoListener() {
+            @Override
+            public void onTimeInfo(final TimeInfoBean timeInfoBean) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        tv_time.setText(TimeUtils.secdsToDateFormat(timeInfoBean.getTotalTime(), timeInfoBean.getTotalTime())
+                                + "/" + TimeUtils.secdsToDateFormat(timeInfoBean.getCurrentTime(), timeInfoBean.getTotalTime()));
+                    }
+                });
+
             }
         });
     }
