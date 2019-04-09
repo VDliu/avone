@@ -3,6 +3,7 @@ package com.av.myplayer.player;
 import android.text.TextUtils;
 
 import com.av.myplayer.bean.TimeInfoBean;
+import com.av.myplayer.listener.OnErrorListener;
 import com.av.myplayer.listener.OnLoadListener;
 import com.av.myplayer.listener.OnPauseResumeListener;
 import com.av.myplayer.listener.OnTimeInfoListener;
@@ -18,6 +19,7 @@ public class MyPlayer {
     private OnLoadListener loadListener;
     private OnPauseResumeListener pauseResumeListener;
     private OnTimeInfoListener timeInfoListener;
+    private OnErrorListener errorListener;
 
     static {
         System.loadLibrary("native-lib");
@@ -57,6 +59,10 @@ public class MyPlayer {
         this.timeInfoListener = timeInfoListener;
     }
 
+    public void setErrorListener(OnErrorListener errorListener) {
+        this.errorListener = errorListener;
+    }
+
     public void onCallPrepared() {
         if (prepareListener != null) {
             prepareListener.onPrepared();
@@ -71,6 +77,13 @@ public class MyPlayer {
 
     public void setPauseResumeListener(OnPauseResumeListener pauseResumeListener) {
         this.pauseResumeListener = pauseResumeListener;
+    }
+
+    public void onCallError(int code ,String message) {
+        player_stop();
+        if (errorListener != null) {
+            errorListener.onError(code,message);
+        }
     }
 
     public void prepare() {

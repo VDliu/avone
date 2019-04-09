@@ -17,6 +17,7 @@ MyFFmpeg *myFFmpeg = NULL;
 CallJava *callJava;
 PlayStatus *playStatus = NULL;
 JavaVM *local_jvm;
+bool n_exit = true;
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -74,6 +75,10 @@ Java_com_av_myplayer_player_MyPlayer_player_1resume(JNIEnv *env, jobject instanc
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_av_myplayer_player_MyPlayer_player_1stop(JNIEnv *env, jobject instance) {
+    if (!n_exit){
+        return;
+    }
+    n_exit = false;
 
     if (myFFmpeg != NULL) {
         myFFmpeg->release();

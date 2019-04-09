@@ -13,6 +13,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.av.myplayer.bean.TimeInfoBean;
+import com.av.myplayer.listener.OnErrorListener;
 import com.av.myplayer.listener.OnLoadListener;
 import com.av.myplayer.listener.OnPauseResumeListener;
 import com.av.myplayer.listener.OnTimeInfoListener;
@@ -91,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
                 //player.setSource("http://mpge.5nd.com/2015/2015-11-26/69708/1.mp3");
                // player.setSource("/storage/emulated/0/a.m4a");
                player.setSource("/storage/emulated/0/test.mp3");
-               // player.setSource("http://ngcdn004.cnr.cn/live/dszs/index.m3u8");
+              //  player.setSource("http://ngcdn004.cnr.cn/live/dszs/index.m3u8");
                 player.prepare();
             }
         });
@@ -141,6 +142,14 @@ public class MainActivity extends AppCompatActivity {
                                 + "/" + TimeUtils.secdsToDateFormat(timeInfoBean.getCurrentTime(), timeInfoBean.getTotalTime()));
                     }
                 });
+
+            }
+        });
+
+        player.setErrorListener(new OnErrorListener() {
+            @Override
+            public void onError(int code, String msg) {
+                Log.e(TAG, "onError: code =" +code + ",error message =" +msg );
 
             }
         });

@@ -61,6 +61,7 @@ void MyFFmpeg::decodeFFmepg() {
         free(buf);
         pthread_mutex_unlock(&init_mutex);
         exit = true;
+        callJava->onCallError(CHILD_THREAD,-1,"can not open url");
         return;
     }
     //4.找到流信息

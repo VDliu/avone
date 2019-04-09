@@ -47,11 +47,7 @@ add_library(
              src/main/cpp/common/MyFFmpeg.cpp
              src/main/cpp/common/AVPacketQueue.cpp
              src/main/cpp/common/PlayStatus.cpp
-             src/main/cpp/androidplatform/base/JavaListener.cpp
-             src/main/cpp/androidplatform/callback/PrepareCallBack.cpp
              src/main/cpp/androidplatform/callback/CallJava.cpp
-             src/main/cpp/androidplatform/callback/OnLoadCallBack.cpp
-             src/main/cpp/androidplatform/callback/TestErrorCallBack.cpp
              src/main/cpp/native-lib.cpp )
 
 
