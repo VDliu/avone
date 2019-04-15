@@ -129,7 +129,7 @@ int MyAudio::resampleAudio() {
 
             //fwrite要写入内容的单字节数,要进行写入size字节的数据项的个数
             // fwrite(buffer, 1, data_size, outFile);
-            LOGE("avFrame--pts =%ld", avFrame->pts);
+            LOGD("avFrame--pts =%ld", avFrame->pts);
             now_time = avFrame->pts * av_q2d(time_base);
             if (now_time < clock) {
                 now_time = clock;
@@ -315,6 +315,8 @@ void MyAudio::stop() {
 
 void MyAudio::release() {
     stop();
+    last_time = 0;
+    clock = 0;
 
     if (queue != NULL) {
         delete queue;

@@ -25,6 +25,7 @@ CallJava::CallJava(_JavaVM *javaVM, JNIEnv *env, jobject *obj) {
     jmid_load = env->GetMethodID(jlz, "onCallLoad", "(Z)V");
     jmid_timeinfo = env->GetMethodID(jlz, "onCallTimeInfo", "(II)V");
     jmid_error = env->GetMethodID(jlz, "onCallError", "(ILjava/lang/String;)V");
+    jmid_compelet = env->GetMethodID(jlz, "onCallCompelet", "()V");
 
 }
 
@@ -95,6 +96,23 @@ void CallJava::onCallError(int type, int code, char *msg) {
 
 }
 
+void CallJava::onCallCompelet(int type) {
+    if (type == MAIN_THREAD) {
+        jniEnv->CallVoidMethod(jobj, jmid_compelet);
+    } else if (type == CHILD_THREAD) {
+        JNIEnv *jniEnv;
+        if (javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK) {
+            LOGE("call onCallTimeInfo worng");
+            return;
+        }
+        jniEnv->CallVoidMethod(jobj, jmid_compelet);
+        javaVM->DetachCurrentThread();
+    }
+
+}
+
 CallJava::~CallJava() {
 
 }
+
+

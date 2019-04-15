@@ -14,6 +14,8 @@ public:
 
     bool isLoading;
 
+    bool isSeeking;
+
 public:
     PlayStatus();
 

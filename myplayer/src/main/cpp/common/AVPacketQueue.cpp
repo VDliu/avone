@@ -14,20 +14,7 @@ AVPacketQueue::AVPacketQueue(PlayStatus *playStatus) {
 }
 
 AVPacketQueue::~AVPacketQueue() {
-
-    //唤醒等待休眠线程
-    pthread_cond_signal(&cond);
-    //释放队列中保存的数据
-    pthread_mutex_lock(&mutex);
-    while (avPackQueue.size() > 0){
-        AVPacket *packet = avPackQueue.front();
-        avPackQueue.pop();
-        av_packet_free(&packet);
-        av_free(packet);
-        packet = NULL;
-    }
-    pthread_mutex_unlock(&mutex);
-
+    clearQueue();
     pthread_mutex_destroy(&mutex);
     pthread_cond_destroy(&cond);
 }
@@ -36,7 +23,7 @@ int AVPacketQueue::putAvPacket(AVPacket *avPacket) {
     pthread_mutex_lock(&mutex);
     if (avPacket != NULL) {
         avPackQueue.push(avPacket);
-       // LOGD("insert a packet in queue ,total = %d",avPackQueue.size());
+        // LOGD("insert a packet in queue ,total = %d",avPackQueue.size());
         pthread_cond_signal(&cond);
     }
     pthread_mutex_unlock(&mutex);
@@ -76,6 +63,22 @@ int AVPacketQueue::getQueueSize() {
     size = avPackQueue.size();
     pthread_mutex_unlock(&mutex);
     return size;
+}
+
+void AVPacketQueue::clearQueue() {
+
+    //唤醒等待休眠线程
+    pthread_cond_signal(&cond);
+    //释放队列中保存的数据
+    pthread_mutex_lock(&mutex);
+    while (avPackQueue.size() > 0) {
+        AVPacket *packet = avPackQueue.front();
+        avPackQueue.pop();
+        av_packet_free(&packet);
+        av_free(packet);
+        packet = NULL;
+    }
+    pthread_mutex_unlock(&mutex);
 }
 
 

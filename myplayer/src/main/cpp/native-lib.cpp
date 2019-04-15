@@ -18,6 +18,7 @@ CallJava *callJava;
 PlayStatus *playStatus = NULL;
 JavaVM *local_jvm;
 bool n_exit = true;
+pthread_t start_thread;
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -39,11 +40,17 @@ Java_com_av_myplayer_player_MyPlayer_player_1prepare(JNIEnv *env, jobject instan
     //env->ReleaseStringUTFChars(source_, source);
 }
 
+void *startFFmpeg(void *data) {
+    MyFFmpeg *fFmpeg = (MyFFmpeg *) data;
+    fFmpeg->start();
+    pthread_exit(&start_thread);
+}
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_av_myplayer_player_MyPlayer_player_1start(JNIEnv *env, jobject instance) {
     if (myFFmpeg != NULL) {
-        myFFmpeg->start();
+        pthread_create(&start_thread, NULL, startFFmpeg, myFFmpeg);
     }
 }
 
@@ -75,9 +82,12 @@ Java_com_av_myplayer_player_MyPlayer_player_1resume(JNIEnv *env, jobject instanc
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_av_myplayer_player_MyPlayer_player_1stop(JNIEnv *env, jobject instance) {
-    if (!n_exit){
+    if (!n_exit) {
         return;
     }
+    //调用下一曲
+    jclass  clss = env->GetObjectClass(instance);
+    jmethodID next_method = env->GetMethodID(clss,"onCallNext","()V");
     n_exit = false;
 
     if (myFFmpeg != NULL) {
@@ -94,6 +104,19 @@ Java_com_av_myplayer_player_MyPlayer_player_1stop(JNIEnv *env, jobject instance)
             delete playStatus;
             playStatus = NULL;
         }
+    }
+    n_exit = true;
+
+    env->CallVoidMethod(instance,next_method);
+
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_av_myplayer_player_MyPlayer_player_1seek(JNIEnv *env, jobject instance, jint sec) {
+
+    if (myFFmpeg != NULL) {
+        myFFmpeg->seek(sec);
     }
 
 }

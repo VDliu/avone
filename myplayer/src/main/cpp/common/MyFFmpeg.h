@@ -26,7 +26,9 @@ public:
     PlayStatus *playStatus = NULL;
 
     pthread_mutex_t init_mutex;
+    pthread_mutex_t seek_mutex;
     bool exit ;
+
 
 public:
     MyFFmpeg(PlayStatus *playStatus, const char *url,CallJava *callJava);
@@ -44,6 +46,8 @@ public:
     void resume();
 
     void release();
+
+    void seek(int sec);
 };
 
 

@@ -9,4 +9,5 @@
 PlayStatus::PlayStatus() {
     exit = false;
     isLoading = false;
+    isSeeking = false;
 }

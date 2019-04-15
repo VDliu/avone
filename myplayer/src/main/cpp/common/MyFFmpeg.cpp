@@ -11,6 +11,7 @@ MyFFmpeg::MyFFmpeg(PlayStatus *playStatus, const char *url, CallJava *callJava) 
     this->url = url;
     this->playStatus = playStatus;
     pthread_mutex_init(&init_mutex, NULL);
+    pthread_mutex_init(&seek_mutex, NULL);
     exit = false;
 }
 
@@ -61,7 +62,7 @@ void MyFFmpeg::decodeFFmepg() {
         free(buf);
         pthread_mutex_unlock(&init_mutex);
         exit = true;
-        callJava->onCallError(CHILD_THREAD,-1,"can not open url");
+        callJava->onCallError(CHILD_THREAD, -1, "can not open url");
         return;
     }
     //4.找到流信息
@@ -151,6 +152,7 @@ void MyFFmpeg::decodeFFmepg() {
 
 MyFFmpeg::~MyFFmpeg() {
     pthread_mutex_destroy(&init_mutex);
+    pthread_mutex_destroy(&seek_mutex);
 
     if (url != NULL) {
         delete url;
@@ -165,7 +167,6 @@ void MyFFmpeg::start() {
     //单独线程重采样
     myAudio->play();
     //延时 模拟加载
-    sleep(5);
     while (playStatus != NULL && !playStatus->exit) {
         /**
          * 1.AVPacket是FFmpeg中很重要的一个数据结构，它保存了解复用（demuxer)之后
@@ -175,8 +176,24 @@ void MyFFmpeg::start() {
          * 2.AVFrame 为解压缩的原始数据
          *
          */
+        if (playStatus->isSeeking) {
+            continue;
+        }
+
+        //队列中最多保存40个packet,
+        // 1.防止队列数据过多
+        // 2.防止在读取队列完毕后，队列中包含很多数据吗，此时seek会清空数据，这个时候会导致播放退出
+        if (myAudio->queue->getQueueSize() > 40) {
+            continue;
+        }
+
+
         AVPacket *avPacket = av_packet_alloc();
-        if (av_read_frame(pFormatCtx, avPacket) == 0) {
+        pthread_mutex_lock(&seek_mutex);
+        int ret = av_read_frame(pFormatCtx, avPacket);
+        pthread_mutex_unlock(&seek_mutex);
+
+        if (ret == 0) {
             //判断是否是音频流
             if (avPacket->stream_index == myAudio->streamIndex) {
                 myAudio->queue->putAvPacket(avPacket);
@@ -202,11 +219,15 @@ void MyFFmpeg::start() {
         }
 
     }
-    exit = true;
 
     {
         LOGD("解码完成");
     }
+
+    if (callJava != NULL) {
+        callJava->onCallCompelet(CHILD_THREAD);
+    }
+    exit = true;
 
 }
 
@@ -224,9 +245,6 @@ void MyFFmpeg::resume() {
 }
 
 void MyFFmpeg::release() {
-    if (playStatus->exit) {
-        return;
-    }
 
     playStatus->exit = true;
 
@@ -267,5 +285,28 @@ void MyFFmpeg::release() {
     }
 
     pthread_mutex_unlock(&init_mutex);
+
+}
+
+void MyFFmpeg::seek(int sec) {
+    if (myAudio == NULL || myAudio->duration <= 0) {
+        return;
+    }
+
+    if (sec > 0 && sec <= myAudio->duration) {
+        if (!playStatus->isSeeking) {
+            playStatus->isSeeking = true;
+            //清空queue
+            myAudio->queue->clearQueue();
+            myAudio->clock = 0;
+            myAudio->last_time = 0;
+            pthread_mutex_lock(&seek_mutex);
+            int64_t rel = sec * AV_TIME_BASE;
+            //移动到文件seek处
+            avformat_seek_file(pFormatCtx, -1, INT64_MIN, rel, INT64_MAX, 0);
+            pthread_mutex_unlock(&seek_mutex);
+            playStatus->isSeeking = false;
+        }
+    }
 
 }
