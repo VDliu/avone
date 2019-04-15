@@ -10,7 +10,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.av.myplayer.bean.TimeInfoBean;
 import com.av.myplayer.listener.OnCompelet;
@@ -21,8 +20,6 @@ import com.av.myplayer.listener.OnTimeInfoListener;
 import com.av.myplayer.listener.PrepareListener;
 import com.av.myplayer.player.MyPlayer;
 import com.av.myplayer.utils.TimeUtils;
-
-import javax.security.auth.login.LoginException;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -145,6 +142,7 @@ public class MainActivity extends AppCompatActivity {
         player.setTimeInfoListener(new OnTimeInfoListener() {
             @Override
             public void onTimeInfo(final TimeInfoBean timeInfoBean) {
+                Log.e(TAG, "onTimeInfo: " +timeInfoBean );
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -170,5 +168,10 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, "compelet: --" );
             }
         });
+    }
+
+    public void next(View v){
+        Log.e(TAG, "next: " );
+        player.playNext("/storage/emulated/0/test.mp3");
     }
 }
