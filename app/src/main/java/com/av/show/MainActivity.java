@@ -12,7 +12,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.av.myplayer.bean.TimeInfoBean;
-import com.av.myplayer.listener.OnCompelet;
+import com.av.myplayer.listener.OnComplete;
 import com.av.myplayer.listener.OnErrorListener;
 import com.av.myplayer.listener.OnLoadListener;
 import com.av.myplayer.listener.OnPauseResumeListener;
@@ -20,6 +20,7 @@ import com.av.myplayer.listener.OnTimeInfoListener;
 import com.av.myplayer.listener.PrepareListener;
 import com.av.myplayer.player.MyPlayer;
 import com.av.myplayer.utils.TimeUtils;
+
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -35,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
     private final static String SDCARD = "/storage/emulated/0";
     private static String[] PERMISSIONS_STORAGE = {
             "android.permission.READ_EXTERNAL_STORAGE",
-            "android.permission.WRITE_EXTERNAL_STORAGE" };
+            "android.permission.WRITE_EXTERNAL_STORAGE"};
 
 
     public static void verifyStoragePermissions(Activity activity) {
@@ -48,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
                     "READ_EXTERNAL_STORAGE");
             if (permission != PackageManager.PERMISSION_GRANTED && permission1 != PackageManager.PERMISSION_GRANTED) {
                 // 没有写的权限，去申请写的权限，会弹出对话框
-                ActivityCompat.requestPermissions(activity, PERMISSIONS_STORAGE,1000);
+                ActivityCompat.requestPermissions(activity, PERMISSIONS_STORAGE, 1000);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -61,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         verifyStoragePermissions(this);
-        Log.e(TAG, "onCreate: ==" + Environment.getExternalStorageDirectory() );
+        Log.e(TAG, "onCreate: ==" + Environment.getExternalStorageDirectory());
 
         player = new MyPlayer();
         begin_btn = findViewById(R.id.begin_btn);
@@ -73,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
         seek_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                player.seek(215);
+                player.seek(210);
             }
         });
 
@@ -96,10 +97,10 @@ public class MainActivity extends AppCompatActivity {
         begin_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //player.setSource("http://mpge.5nd.com/2015/2015-11-26/69708/1.mp3");
-               // player.setSource("/storage/emulated/0/a.m4a");
-               player.setSource("/storage/emulated/0/test.mp3");
-              //  player.setSource("http://ngcdn004.cnr.cn/live/dszs/index.m3u8");
+                player.setSource("http://mpge.5nd.com/2015/2015-11-26/69708/1.mp3");
+                //player.setSource("/storage/emulated/0/a.m4a");
+                //player.setSource("/storage/emulated/0/test.mp3");
+                // player.setSource("http://ngcdn004.cnr.cn/live/dszs/index.m3u8");
                 player.prepare();
             }
         });
@@ -107,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
         player.setPrepareListener(new PrepareListener() {
             @Override
             public void onPrepared() {
-                Log.e(TAG, "native media is prepared" );
+                Log.e(TAG, "native media is prepared");
                 //开始播放
                 player.start();
             }
@@ -123,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
         player.setLoadListener(new OnLoadListener() {
             @Override
             public void onLoad(boolean loading) {
-                Log.e(TAG, "onLoad: loading = " +loading );
+                Log.e(TAG, "onLoad: loading = " + loading);
 
             }
         });
@@ -131,10 +132,10 @@ public class MainActivity extends AppCompatActivity {
         player.setPauseResumeListener(new OnPauseResumeListener() {
             @Override
             public void onPause(boolean pause) {
-                if (pause){
-                    Log.e(TAG, "onPause: 暂停中"  );
-                }else{
-                    Log.e(TAG, "onPause: 继续播放" );
+                if (pause) {
+                    Log.e(TAG, "onPause: 暂停中");
+                } else {
+                    Log.e(TAG, "onPause: 继续播放");
                 }
             }
         });
@@ -142,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
         player.setTimeInfoListener(new OnTimeInfoListener() {
             @Override
             public void onTimeInfo(final TimeInfoBean timeInfoBean) {
-                Log.e(TAG, "onTimeInfo: " +timeInfoBean );
+                // Log.e(TAG, "onTimeInfo: " +timeInfoBean );
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -157,21 +158,21 @@ public class MainActivity extends AppCompatActivity {
         player.setErrorListener(new OnErrorListener() {
             @Override
             public void onError(int code, String msg) {
-                Log.e(TAG, "onError: code =" +code + ",error message =" +msg );
+                Log.e(TAG, "onError: code =" + code + ",error message =" + msg);
 
             }
         });
 
-        player.setCompelet(new OnCompelet() {
+        player.setCompelet(new OnComplete() {
             @Override
-            public void compelet() {
-                Log.e(TAG, "compelet: --" );
+            public void complete() {
+                Log.e(TAG, "compelet: --");
             }
         });
     }
 
-    public void next(View v){
-        Log.e(TAG, "next: " );
-        player.playNext("/storage/emulated/0/test.mp3");
+    public void next(View v) {
+        Log.e(TAG, "next: ");
+        player.playNext("http://mpge.5nd.com/2015/2015-11-26/69708/1.mp3");
     }
 }
