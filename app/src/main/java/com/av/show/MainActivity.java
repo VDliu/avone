@@ -34,12 +34,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Button left_mute;
     Button right_mute;
     Button center_mute;
+
+    Button speed_btn;
+    Button pitch_btn;
+    Button normal_btn;
+    Button speed_pitch_btn;
     SeekBar seekBar;
     boolean is_progress_seek = false;
     private int currentVolume = 50;
     SeekBar volume_seek;
     TextView tv_volume;
     TextView tv_mute;
+    TextView tv_voice;
 
     TextView tv_time;
     private MyPlayer player;
@@ -94,8 +100,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         right_mute.setOnClickListener(this);
         center_mute.setOnClickListener(this);
 
+
+        speed_btn = findViewById(R.id.speed_btn);
+        pitch_btn = findViewById(R.id.pitch_btn);
+        normal_btn = findViewById(R.id.normal_btn);
+        speed_pitch_btn = findViewById(R.id.speed_pitch);
+        speed_btn.setOnClickListener(this);
+        pitch_btn.setOnClickListener(this);
+        normal_btn.setOnClickListener(this);
+        speed_pitch_btn.setOnClickListener(this);
+
+        tv_voice = findViewById(R.id.voice_tv);
+
+
         tv_volume.setText("当前音量" + currentVolume + "%");
-        tv_mute.setText("当前声道" +"立体声");
+        tv_mute.setText("当前声道" + "立体声");
         volume_seek.setProgress(currentVolume);
 
         volume_seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -121,9 +140,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
                 if (is_progress_seek) {
-                    Log.e(TAG, "onProgressChanged: durateion = " +player.getDuration() + ",i="+i );
+                    Log.e(TAG, "onProgressChanged: durateion = " + player.getDuration() + ",i=" + i);
                     seek_time = player.getDuration() * i / 100;
-                    Log.e(TAG, "onProgressChanged: seek time =" +seek_time );
+                    Log.e(TAG, "onProgressChanged: seek time =" + seek_time);
                 }
             }
 
@@ -266,19 +285,45 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.left_mute:
                 mute = 1;
                 str = "左声道";
+                tv_mute.setText("当前声道：" + str);
+                player.setMute(mute);
                 break;
             case R.id.right_mute:
                 mute = 0;
                 str = "右声道";
+                tv_mute.setText("当前声道：" + str);
+                player.setMute(mute);
                 break;
             case R.id.center_mute:
                 mute = 2;
                 str = "立体声";
+                tv_mute.setText("当前声道：" + str);
+                player.setMute(mute);
                 break;
+            case R.id.speed_btn:
+                player.setSpeed(2.0f);
+                player.setPitch(1.0f);
+                tv_voice.setText("变速");
+                break;
+            case R.id.pitch_btn:
+                player.setPitch(2.0f);
+                player.setSpeed(1.0f);
+                tv_voice.setText("变调");
+                break;
+            case R.id.speed_pitch:
+                player.setSpeed(2.0f);
+                player.setPitch(2.0f);
+                tv_voice.setText("变调-变速");
+                break;
+            case R.id.normal_btn:
+                player.setSpeed(1.0f);
+                player.setPitch(1.0f);
+                tv_voice.setText("正常音调");
+                break;
+
             default:
                 break;
         }
-        tv_mute.setText("当前声道：" + str);
-        player.setMute(mute);
+
     }
 }
