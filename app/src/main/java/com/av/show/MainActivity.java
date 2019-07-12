@@ -9,6 +9,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.av.myplayer.bean.TimeInfoBean;
@@ -22,7 +23,7 @@ import com.av.myplayer.player.MyPlayer;
 import com.av.myplayer.utils.TimeUtils;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private static final String TAG = "MainActivity";
 
     Button begin_btn;
@@ -30,6 +31,15 @@ public class MainActivity extends AppCompatActivity {
     Button resume_btn;
     Button stop_btn;
     Button seek_btn;
+    Button left_mute;
+    Button right_mute;
+    Button center_mute;
+    SeekBar seekBar;
+    boolean is_progress_seek = false;
+    private int currentVolume = 50;
+    SeekBar volume_seek;
+    TextView tv_volume;
+    TextView tv_mute;
 
     TextView tv_time;
     private MyPlayer player;
@@ -37,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
     private static String[] PERMISSIONS_STORAGE = {
             "android.permission.READ_EXTERNAL_STORAGE",
             "android.permission.WRITE_EXTERNAL_STORAGE"};
+    private int mute = 2;
+    private int seek_time;
 
 
     public static void verifyStoragePermissions(Activity activity) {
@@ -65,12 +77,69 @@ public class MainActivity extends AppCompatActivity {
         Log.e(TAG, "onCreate: ==" + Environment.getExternalStorageDirectory());
 
         player = new MyPlayer();
+        seekBar = findViewById(R.id.seek_bar);
         begin_btn = findViewById(R.id.begin_btn);
         pause_btn = findViewById(R.id.pause_btn);
         resume_btn = findViewById(R.id.play_resume);
         tv_time = findViewById(R.id.tv_time);
         stop_btn = findViewById(R.id.play_stop);
+        volume_seek = findViewById(R.id.seek_bar_volume);
         seek_btn = findViewById(R.id.seek_btn);
+        tv_volume = findViewById(R.id.tv_volume);
+        left_mute = findViewById(R.id.left_mute);
+        right_mute = findViewById(R.id.right_mute);
+        center_mute = findViewById(R.id.center_mute);
+        tv_mute = findViewById(R.id.current_mute);
+        left_mute.setOnClickListener(this);
+        right_mute.setOnClickListener(this);
+        center_mute.setOnClickListener(this);
+
+        tv_volume.setText("当前音量" + currentVolume + "%");
+        tv_mute.setText("当前声道" +"立体声");
+        volume_seek.setProgress(currentVolume);
+
+        volume_seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
+                player.setVolume(progress);
+                tv_volume.setText("当前音量" + progress + "%");
+                currentVolume = progress;
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                if (is_progress_seek) {
+                    Log.e(TAG, "onProgressChanged: durateion = " +player.getDuration() + ",i="+i );
+                    seek_time = player.getDuration() * i / 100;
+                    Log.e(TAG, "onProgressChanged: seek time =" +seek_time );
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                is_progress_seek = true;
+                player.pause();
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                player.seek(seek_time);
+                player.resume();
+                is_progress_seek = false;
+            }
+        });
         seek_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -109,6 +178,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPrepared() {
                 Log.e(TAG, "native media is prepared");
+                player.setVolume(currentVolume);
+                player.setMute(mute);
                 //开始播放
                 player.start();
             }
@@ -117,6 +188,7 @@ public class MainActivity extends AppCompatActivity {
         stop_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+
                 player.stop();
             }
         });
@@ -149,6 +221,9 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         tv_time.setText(TimeUtils.secdsToDateFormat(timeInfoBean.getTotalTime(), timeInfoBean.getTotalTime())
                                 + "/" + TimeUtils.secdsToDateFormat(timeInfoBean.getCurrentTime(), timeInfoBean.getTotalTime()));
+                        if (is_progress_seek) return;
+                        double time = (double) timeInfoBean.getCurrentTime() / (double) player.getDuration() * 100;
+                        seekBar.setProgress((int) time);
                     }
                 });
 
@@ -174,5 +249,36 @@ public class MainActivity extends AppCompatActivity {
     public void next(View v) {
         Log.e(TAG, "next: ");
         player.playNext("http://mpge.5nd.com/2015/2015-11-26/69708/1.mp3");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (player != null) {
+            player.stop();
+        }
+    }
+
+    @Override
+    public void onClick(View view) {
+        String str = "";
+        switch (view.getId()) {
+            case R.id.left_mute:
+                mute = 1;
+                str = "左声道";
+                break;
+            case R.id.right_mute:
+                mute = 0;
+                str = "右声道";
+                break;
+            case R.id.center_mute:
+                mute = 2;
+                str = "立体声";
+                break;
+            default:
+                break;
+        }
+        tv_mute.setText("当前声道：" + str);
+        player.setMute(mute);
     }
 }

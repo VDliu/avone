@@ -1,65 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
     tools:context=".MainActivity">
 
-    <Button
-        android:id="@+id/begin_btn"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="parent"
-        android:text="播放" />
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/begin_btn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="播放" />
 
 
-    <Button
-        android:id="@+id/pause_btn"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/begin_btn"
-        android:layout_marginTop="20dp"
-        android:text="pause" />
+        <Button
+            android:id="@+id/pause_btn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="pause" />
 
-    <Button
-        android:id="@+id/play_resume"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/pause_btn"
-        android:layout_marginTop="20dp"
-        android:text="resume" />
+        <Button
+            android:id="@+id/play_resume"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="resume" />
 
-    <Button
-        android:id="@+id/play_stop"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/play_resume"
-        android:layout_marginTop="20dp"
-        android:text="stop" />
+        <Button
+            android:id="@+id/play_stop"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="stop" />
+
+
+        <Button
+            android:id="@+id/seek_btn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="seek" />
+
+        <Button
+            android:id="@+id/next_btn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="next"
+            android:text="next" />
+    </LinearLayout>
+
     <TextView
         android:id="@+id/tv_time"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/play_stop"
         android:layout_marginTop="20dp"
-        android:text="::" />
+        android:text="播放时间" />
+    <SeekBar
+        android:id="@+id/seek_bar"
+        android:layout_marginTop="20dp"
+        android:max="100"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
-    <Button
-        android:id="@+id/seek_btn"
+    <TextView
+        android:id="@+id/tv_volume"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/tv_time"
         android:layout_marginTop="20dp"
-        android:text="seek" />
-
-    <Button
-        android:id="@+id/next_btn"
+        android:text="音量设置" />
+    <SeekBar
+        android:id="@+id/seek_bar_volume"
+        android:layout_marginTop="20dp"
+        android:max="100"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/seek_btn"
-        android:layout_marginTop="20dp"
-        android:onClick="next"
-        android:text="next" />
+        android:layout_height="wrap_content" />
+    <TextView
+        android:id="@+id/current_mute"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <Button
+            android:id="@+id/left_mute"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:text="左声道"
+            android:layout_height="wrap_content" />
+        <Button
+            android:id="@+id/right_mute"
+            android:layout_weight="1"
+            android:text="右声道"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content" />
+        <Button
+            android:id="@+id/center_mute"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:text="立体声"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
 
-</android.support.constraint.ConstraintLayout>
+</LinearLayout>
