@@ -196,6 +196,7 @@ void MyFFmpeg::start() {
          *
          */
         if (playStatus->isSeeking) {
+            av_usleep(1000 * 100);
             continue;
         }
 
@@ -203,9 +204,9 @@ void MyFFmpeg::start() {
         // 1.防止队列数据过多
         // 2.防止在读取队列完毕后，队列中包含很多数据吗，此时seek会清空数据，这个时候会导致播放退出
         // 3.比如在暂停状态，播放器没有去取avpacket这个时候不设置阈值会导致内存不断增大
-        if (myAudio->queue->getQueueSize() > 40) {
-            continue;
-        }
+//        if (myAudio->queue->getQueueSize() > 40) {
+//            continue;
+//        }
 
 
         AVPacket *avPacket = av_packet_alloc();

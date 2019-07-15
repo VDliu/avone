@@ -59,29 +59,17 @@ void *playVideo(void *data) {
             avPacket = NULL;
             continue;
         }
-        LOGE("子线程解码一个AVframe成功");
+        LOGE("子线程解码一个AVframe视频成功");
 
-        if(avcodec_receive_frame(video->avCodecContext, avFrame) != 0)
-        {
-            av_frame_free(&avFrame);
-            av_free(avFrame);
-            avFrame = NULL;
-            av_packet_free(&avPacket);
-            av_free(avPacket);
-            avPacket = NULL;
-            continue;
-        }
-        LOGE("子线程解码一个AVframe成功");
-        if(avFrame->format == AV_PIX_FMT_YUV420P)
-        {
+        if (avFrame->format == AV_PIX_FMT_YUV420P) {
             LOGE("当前视频是YUV420P格式");
-//            video->wlCallJava->onCallRenderYUV(
-//                    video->avCodecContext->width,
-//                    video->avCodecContext->height,
-//                    avFrame->data[0],
-//                    avFrame->data[1],
-//                    avFrame->data[2]);
-        } else{
+            video->wlCallJava->onCallRenderYUV(
+                    video->avCodecContext->width,
+                    video->avCodecContext->height,
+                    avFrame->data[0],
+                    avFrame->data[1],
+                    avFrame->data[2]);
+        } else {
             LOGE("当前视频不是YUV420P格式");
             AVFrame *pFrameYUV420P = av_frame_alloc();
             int num = av_image_get_buffer_size(
@@ -107,8 +95,7 @@ void *playVideo(void *data) {
                     AV_PIX_FMT_YUV420P,
                     SWS_BICUBIC, NULL, NULL, NULL);
 
-            if(!sws_ctx)
-            {
+            if (!sws_ctx) {
                 av_frame_free(&pFrameYUV420P);
                 av_free(pFrameYUV420P);
                 av_free(buffer);
@@ -123,12 +110,12 @@ void *playVideo(void *data) {
                     pFrameYUV420P->data,
                     pFrameYUV420P->linesize);
             //渲染
-//            video->wlCallJava->onCallRenderYUV(
-//                    video->avCodecContext->width,
-//                    video->avCodecContext->height,
-//                    pFrameYUV420P->data[0],
-//                    pFrameYUV420P->data[1],
-//                    pFrameYUV420P->data[2]);
+            video->wlCallJava->onCallRenderYUV(
+                    video->avCodecContext->width,
+                    video->avCodecContext->height,
+                    pFrameYUV420P->data[0],
+                    pFrameYUV420P->data[1],
+                    pFrameYUV420P->data[2]);
 
             av_frame_free(&pFrameYUV420P);
             av_free(pFrameYUV420P);

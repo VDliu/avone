@@ -4,6 +4,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.av.myplayer.bean.TimeInfoBean;
+import com.av.myplayer.gl.view.MySurfaceView;
 import com.av.myplayer.listener.OnComplete;
 import com.av.myplayer.listener.OnErrorListener;
 import com.av.myplayer.listener.OnLoadListener;
@@ -30,6 +31,17 @@ public class MyPlayer {
     private OnTimeInfoListener timeInfoListener;
     private OnErrorListener errorListener;
     private OnComplete complete;
+    private MySurfaceView surfaceView;
+
+    public void setSurfaceView(MySurfaceView surfaceView) {
+        this.surfaceView = surfaceView;
+    }
+
+    public void setYuvData(int w, int h, byte[] buffer_y, byte[] buffer_u, byte[] buffer_v) {
+        if (surfaceView != null) {
+            surfaceView.setYuvData(w, h, buffer_y, buffer_u, buffer_v);
+        }
+    }
 
     static {
         System.loadLibrary("native-lib");
@@ -208,15 +220,22 @@ public class MyPlayer {
         }
     }
 
+    public void onCallRenderYUV(int width, int height, byte[] y, byte[] u, byte[] v) {
+        Log.e(TAG, "onCallRenderYUV: ------------" );
+
+        setYuvData(width,height,y,u,v);
+    }
+
+
     public void setMute(int mute) {
         set_mute(mute);
     }
 
-    public void setSpeed(float speed){
+    public void setSpeed(float speed) {
         set_speed(speed);
     }
 
-    public void setPitch(float pitch){
+    public void setPitch(float pitch) {
         set_pitch(pitch);
     }
 
