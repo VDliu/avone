@@ -7,6 +7,7 @@
 #include "MyAudio.h"
 #include "PlayStatus.h"
 #include "../androidplatform/callback/CallJava.h"
+#include "MyVideo.h"
 
 extern "C"
 {
@@ -28,6 +29,9 @@ public:
     pthread_mutex_t init_mutex;
     pthread_mutex_t seek_mutex;
     bool exit ;
+
+    //视频
+    MyVideo *myVideo = NULL;
 
 
 public:
@@ -56,6 +60,8 @@ public:
     void setPitch(float pitch);
 
     void setSpeed(float speed);
+
+    int getCodecContext(AVCodecParameters *codecpar, AVCodecContext **avCodecContext);
 };
 
 

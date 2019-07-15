@@ -97,7 +97,22 @@ void MyFFmpeg::decodeFFmepg() {
                 //num=1,den = 14112000
                 LOGE("time base num=%d,den = %d", myAudio->time_base.num, myAudio->time_base.den);
             }
+        } else if (pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            //找到视频流
+            if (myVideo == NULL) {
+                myVideo = new MyVideo(playStatus, callJava);
+                myVideo->streamIndex = i;
+                myVideo->codecpar = pFormatCtx->streams[i]->codecpar;
+                myVideo->time_base = pFormatCtx->streams[i]->time_base;
+            }
         }
+    }
+
+    if (myAudio != NULL) {
+        getCodecContext(myAudio->codecParameters, &myAudio->codecContext);
+    }
+    if (myVideo != NULL) {
+        getCodecContext(myVideo->codecpar, &myVideo->avCodecContext);
     }
 
     if (myAudio == NULL) {
@@ -107,39 +122,39 @@ void MyFFmpeg::decodeFFmepg() {
         return;
     }
 
-    //6.找到音频流的解码器
-    AVCodec *audioCodec = avcodec_find_decoder(myAudio->codecParameters->codec_id);
-    if (audioCodec == NULL) {
-        LOGE("find audio code failed");
-        pthread_mutex_unlock(&init_mutex);
-        exit = true;
-        return;
-    }
-
-    //7.找到音频流解码器上下文
-    myAudio->codecContext = avcodec_alloc_context3(audioCodec);
-    if (myAudio->codecContext == NULL) {
-        LOGE("alloc av codeContext failed");
-        pthread_mutex_unlock(&init_mutex);
-        exit = true;
-        return;
-    }
-
-    //8.把音频AVCodecParameters 复制到音频AVCodecContext中
-    if (avcodec_parameters_to_context(myAudio->codecContext, myAudio->codecParameters) < 0) {
-        LOGE("cope parameters to  codecContext failed");
-        pthread_mutex_unlock(&init_mutex);
-        exit = true;
-        return;
-    }
-
-    //9.打开音频解码器
-    if (avcodec_open2(myAudio->codecContext, audioCodec, NULL) < 0) {
-        LOGE("open audio code failed");
-        pthread_mutex_unlock(&init_mutex);
-        exit = true;
-        return;
-    }
+//    //6.找到音频流的解码器
+//    AVCodec *audioCodec = avcodec_find_decoder(myAudio->codecParameters->codec_id);
+//    if (audioCodec == NULL) {
+//        LOGE("find audio code failed");
+//        pthread_mutex_unlock(&init_mutex);
+//        exit = true;
+//        return;
+//    }
+//
+//    //7.找到音频流解码器上下文
+//    myAudio->codecContext = avcodec_alloc_context3(audioCodec);
+//    if (myAudio->codecContext == NULL) {
+//        LOGE("alloc av codeContext failed");
+//        pthread_mutex_unlock(&init_mutex);
+//        exit = true;
+//        return;
+//    }
+//
+//    //8.把音频AVCodecParameters 复制到音频AVCodecContext中
+//    if (avcodec_parameters_to_context(myAudio->codecContext, myAudio->codecParameters) < 0) {
+//        LOGE("cope parameters to  codecContext failed");
+//        pthread_mutex_unlock(&init_mutex);
+//        exit = true;
+//        return;
+//    }
+//
+//    //9.打开音频解码器
+//    if (avcodec_open2(myAudio->codecContext, audioCodec, NULL) < 0) {
+//        LOGE("open audio code failed");
+//        pthread_mutex_unlock(&init_mutex);
+//        exit = true;
+//        return;
+//    }
 
     if (callJava != NULL) {
         if (playStatus != NULL && !playStatus->exit) {
@@ -169,6 +184,7 @@ void MyFFmpeg::start() {
     }
     //单独线程重采样，然后播放
     myAudio->play();
+    myVideo->play();
     //从数据中读取avpacket加入队列中
     while (playStatus != NULL && !playStatus->exit) {
         /**
@@ -201,6 +217,8 @@ void MyFFmpeg::start() {
             //判断是否是音频流
             if (avPacket->stream_index == myAudio->streamIndex) {
                 myAudio->queue->putAvPacket(avPacket);
+            } else if (avPacket->stream_index == myVideo->streamIndex) {
+                myVideo->queue->putAvPacket(avPacket);
             } else {//不是音频流
                 av_packet_free(&avPacket);
                 av_free(avPacket);
@@ -275,6 +293,14 @@ void MyFFmpeg::release() {
         myAudio = NULL;
     }
 
+    LOGE("释放 myVideo");
+    if(myVideo != NULL)
+    {
+        myVideo->release();
+        delete(myVideo);
+        myVideo = NULL;
+    }
+
     LOGE("释放 封装格式上下文");
     if (pFormatCtx != NULL) {
         avformat_close_input(&pFormatCtx);
@@ -342,3 +368,40 @@ void MyFFmpeg::setSpeed(float speed) {
         myAudio->setSpeed(speed);
     }
 }
+
+int MyFFmpeg::getCodecContext(AVCodecParameters *codecpar, AVCodecContext **avCodecContext) {
+    AVCodec *dec = avcodec_find_decoder(codecpar->codec_id);
+    if (!dec) {
+        LOGE("can not find decoder");
+        callJava->onCallError(CHILD_THREAD, 1003, "can not find decoder");
+        exit = true;
+        pthread_mutex_unlock(&init_mutex);
+        return -1;
+    }
+
+    *avCodecContext = avcodec_alloc_context3(dec);
+    if (*avCodecContext == NULL) {
+        LOGE("can not alloc new decodecctx");
+        callJava->onCallError(CHILD_THREAD, 1004, "can not alloc new decodecctx");
+        exit = true;
+        pthread_mutex_unlock(&init_mutex);
+        return -1;
+    }
+
+    if (avcodec_parameters_to_context(*avCodecContext, codecpar) < 0) {
+        callJava->onCallError(CHILD_THREAD, 1005, "ccan not fill decodecctx");
+        exit = true;
+        pthread_mutex_unlock(&init_mutex);
+        return -1;
+    }
+
+    if (avcodec_open2(*avCodecContext, dec, 0) != 0) {
+        LOGE("cant not open audio strames");
+        callJava->onCallError(CHILD_THREAD, 1006, "cant not open audio strames");
+        exit = true;
+        pthread_mutex_unlock(&init_mutex);
+        return -1;
+    }
+    return 0;
+}
+

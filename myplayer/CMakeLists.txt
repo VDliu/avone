@@ -2,6 +2,7 @@
 cmake_minimum_required(VERSION 3.4.1)
 
 include_directories(src/main/cpp/include)
+include_directories(src/main/cpp/androidplatform)
 #soundtouch 用于对音频进行变速 变调，可单独改变音调和速度
 #opensels 变速的时候也改变了音调 因此不好
 include_directories(src/main/cpp/soundtouch/include)
@@ -49,6 +50,7 @@ add_library(
              native-lib
              SHARED
              src/main/cpp/common/MyAudio.cpp
+             src/main/cpp/common/MyVideo.cpp
              src/main/cpp/common/MyFFmpeg.cpp
              src/main/cpp/common/AVPacketQueue.cpp
              src/main/cpp/common/PlayStatus.cpp
