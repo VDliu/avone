@@ -49,6 +49,9 @@ int AVPacketQueue::getAvPacket(AVPacket *avPacket) {
         } else {
             //1.先释放锁
             //2.唤醒以后重新去竞争锁
+            //pthread_cond_wait前要先加锁
+            //pthread_cond_wait内部会解锁，然后等待条件变量被其它线程激活
+              //      pthread_cond_wait被激活后会再自动加锁
             pthread_cond_wait(&cond, &mutex);
         }
     }

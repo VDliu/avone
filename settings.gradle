@@ -1,1 +1,1 @@
-include ':app', ':myplayer'
+include ':app', ':myplayer', ':ffmpeg'

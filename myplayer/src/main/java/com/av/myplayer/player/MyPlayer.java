@@ -4,7 +4,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.av.myplayer.bean.TimeInfoBean;
-import com.av.myplayer.listener.OnCompelet;
+import com.av.myplayer.listener.OnComplete;
 import com.av.myplayer.listener.OnErrorListener;
 import com.av.myplayer.listener.OnLoadListener;
 import com.av.myplayer.listener.OnPauseResumeListener;
@@ -14,27 +14,32 @@ import com.av.myplayer.myLog.MyLog;
 
 
 public class MyPlayer {
+    /**
+     * 1.setsource
+     * 2.prepare
+     */
     private static final String TAG = "MyPlayer";
 
     private static String source;
     private static boolean play_next = false;
+    private int total_time;
 
     private PrepareListener prepareListener;
     private OnLoadListener loadListener;
     private OnPauseResumeListener pauseResumeListener;
     private OnTimeInfoListener timeInfoListener;
     private OnErrorListener errorListener;
-    private OnCompelet compelet;
+    private OnComplete complete;
 
     static {
         System.loadLibrary("native-lib");
-        System.loadLibrary("avcodec");
-        System.loadLibrary("avfilter");
-        System.loadLibrary("avformat");
-        System.loadLibrary("avutil");
-        System.loadLibrary("swresample");
-        System.loadLibrary("postproc");
-        System.loadLibrary("swscale");
+        System.loadLibrary("avcodec-57");
+        System.loadLibrary("avfilter-6");
+        System.loadLibrary("avformat-57");
+        System.loadLibrary("avutil-55");
+        System.loadLibrary("swresample-2");
+        //  System.loadLibrary("postproc");
+        System.loadLibrary("swscale-4");
     }
 
     private TimeInfoBean timeBean;
@@ -68,8 +73,8 @@ public class MyPlayer {
         this.errorListener = errorListener;
     }
 
-    public void setCompelet(OnCompelet compelet) {
-        this.compelet = compelet;
+    public void setCompelet(OnComplete complete) {
+        this.complete = complete;
     }
 
     public void onCallPrepared() {
@@ -84,11 +89,11 @@ public class MyPlayer {
         }
     }
 
-    public void onCallCompelet() {
+    public void onCallComplete() {
         stop();
 
-        if (compelet != null) {
-            compelet.compelet();
+        if (complete != null) {
+            complete.complete();
         }
     }
 
@@ -96,11 +101,13 @@ public class MyPlayer {
         this.pauseResumeListener = pauseResumeListener;
     }
 
+    //出错以后 停止
     public void onCallError(int code, String message) {
-        player_stop();
+
         if (errorListener != null) {
             errorListener.onError(code, message);
         }
+        player_stop();
     }
 
     public void prepare() {
@@ -148,6 +155,7 @@ public class MyPlayer {
     }
 
     public void stop() {
+        timeBean = null;
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -173,7 +181,7 @@ public class MyPlayer {
 
 
     public void onCallNext() {
-        Log.e(TAG, "onCallNext: " );
+        Log.e(TAG, "onCallNext: ");
         if (play_next) {
             play_next = false;
             prepare();
@@ -185,6 +193,31 @@ public class MyPlayer {
         source = url;
         play_next = true;
         player_stop();
+    }
+
+    public int getDuration() {
+        if (total_time > 0) {
+            return total_time;
+        }
+        return get_Duration();
+    }
+
+    public void setVolume(int percent) {
+        if (percent >= 0 && percent <= 100) {
+            set_volume(percent);
+        }
+    }
+
+    public void setMute(int mute) {
+        set_mute(mute);
+    }
+
+    public void setSpeed(float speed){
+        set_speed(speed);
+    }
+
+    public void setPitch(float pitch){
+        set_pitch(pitch);
     }
 
 
@@ -199,4 +232,14 @@ public class MyPlayer {
     private native void player_stop();
 
     private native void player_seek(int sec);
+
+    private native int get_Duration();
+
+    private native void set_volume(int percent);
+
+    private native void set_mute(int mute);
+
+    private native void set_speed(float speed);
+
+    private native void set_pitch(float mute);
 }

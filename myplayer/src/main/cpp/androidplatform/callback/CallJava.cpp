@@ -13,6 +13,7 @@ CallJava::CallJava(_JavaVM *javaVM, JNIEnv *env, jobject *obj) {
     this->javaVM = javaVM;
     this->jniEnv = env;
     this->jobj = *obj;
+    //主线程 子线程 就都可以使用这个对象了
     this->jobj = env->NewGlobalRef(jobj);
 
     jclass jlz = jniEnv->GetObjectClass(jobj);
@@ -25,7 +26,7 @@ CallJava::CallJava(_JavaVM *javaVM, JNIEnv *env, jobject *obj) {
     jmid_load = env->GetMethodID(jlz, "onCallLoad", "(Z)V");
     jmid_timeinfo = env->GetMethodID(jlz, "onCallTimeInfo", "(II)V");
     jmid_error = env->GetMethodID(jlz, "onCallError", "(ILjava/lang/String;)V");
-    jmid_compelet = env->GetMethodID(jlz, "onCallCompelet", "()V");
+    jmid_compelet = env->GetMethodID(jlz, "onCallComplete", "()V");
 
 }
 

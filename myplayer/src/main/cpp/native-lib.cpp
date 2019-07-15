@@ -1,3 +1,4 @@
+
 #include <jni.h>
 #include <string>
 #include "pthread.h"
@@ -86,8 +87,8 @@ Java_com_av_myplayer_player_MyPlayer_player_1stop(JNIEnv *env, jobject instance)
         return;
     }
     //调用下一曲
-    jclass  clss = env->GetObjectClass(instance);
-    jmethodID next_method = env->GetMethodID(clss,"onCallNext","()V");
+    jclass clss = env->GetObjectClass(instance);
+    jmethodID next_method = env->GetMethodID(clss, "onCallNext", "()V");
     n_exit = false;
 
     if (myFFmpeg != NULL) {
@@ -107,7 +108,7 @@ Java_com_av_myplayer_player_MyPlayer_player_1stop(JNIEnv *env, jobject instance)
     }
     n_exit = true;
 
-    env->CallVoidMethod(instance,next_method);
+    env->CallVoidMethod(instance, next_method);
 
 }
 
@@ -117,6 +118,52 @@ Java_com_av_myplayer_player_MyPlayer_player_1seek(JNIEnv *env, jobject instance,
 
     if (myFFmpeg != NULL) {
         myFFmpeg->seek(sec);
+    }
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_av_myplayer_player_MyPlayer_get_1Duration(JNIEnv *env, jobject instance) {
+
+    // TODO
+    if (myFFmpeg != NULL) {
+        return myFFmpeg->myAudio->duration;
+    }
+
+    return 0;
+
+}extern "C"
+JNIEXPORT void JNICALL
+Java_com_av_myplayer_player_MyPlayer_set_1volume(JNIEnv *env, jobject instance, jint percent) {
+
+    // TODO
+    if (myFFmpeg != NULL) {
+        myFFmpeg->setVolume(percent);
+    }
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_av_myplayer_player_MyPlayer_set_1mute(JNIEnv *env, jobject instance, jint mute) {
+    if (myFFmpeg != NULL) {
+        myFFmpeg->setMute(mute);
+    }
+
+}extern "C"
+JNIEXPORT void JNICALL
+Java_com_av_myplayer_player_MyPlayer_set_1speed(JNIEnv *env, jobject instance, jfloat speed) {
+
+    // TODO
+    if (myFFmpeg != NULL) {
+        myFFmpeg->setSpeed(speed);
+    }
+
+}extern "C"
+JNIEXPORT void JNICALL
+Java_com_av_myplayer_player_MyPlayer_set_1pitch(JNIEnv *env, jobject instance, jfloat pitch) {
+
+    // TODO
+    if (myFFmpeg != NULL) {
+        myFFmpeg->setPitch(pitch);
     }
 
 }

@@ -28,10 +28,10 @@ void MyFFmpeg::prepare() {
 
 int decodeFFmepgCallback(void *ctx) {
     MyFFmpeg *fFmpeg = (MyFFmpeg *) ctx;
-    if (fFmpeg->playStatus->exit) {
+    if (fFmpeg->playStatus->exit) { //在release中设置为true以后，退出阻塞
         return AVERROR_EOF;
     }
-    return 0;
+    return 0; //否则 继续等待,返回0表示继续等待
 }
 
 //真正解码
@@ -70,6 +70,7 @@ void MyFFmpeg::decodeFFmepg() {
         LOGE("find stream failed");
         pthread_mutex_unlock(&init_mutex);
         exit = true;
+        callJava->onCallError(CHILD_THREAD, -1, "can not find stream info");
         return;
     }
 
@@ -88,9 +89,10 @@ void MyFFmpeg::decodeFFmepg() {
             if (myAudio == NULL) {
                 myAudio = new MyAudio(i, avStream->codecpar, this->playStatus,
                                       avStream->codecpar->sample_rate, callJava);
-                //总时长,换算成单位秒
+                //总时长,换算成单位秒，pFormatCtx->duration表示有
                 myAudio->duration = pFormatCtx->duration / AV_TIME_BASE;
                 LOGE("duration = %d ", myAudio->duration);
+                //time_base ?
                 myAudio->time_base = avStream->time_base;
                 //num=1,den = 14112000
                 LOGE("time base num=%d,den = %d", myAudio->time_base.num, myAudio->time_base.den);
@@ -159,14 +161,15 @@ MyFFmpeg::~MyFFmpeg() {
     }
 }
 
+//start的时候开了一个子线程
 void MyFFmpeg::start() {
     if (myAudio == NULL) {
         LOGE("audio is null");
         return;
     }
-    //单独线程重采样
+    //单独线程重采样，然后播放
     myAudio->play();
-    //延时 模拟加载
+    //从数据中读取avpacket加入队列中
     while (playStatus != NULL && !playStatus->exit) {
         /**
          * 1.AVPacket是FFmpeg中很重要的一个数据结构，它保存了解复用（demuxer)之后
@@ -183,6 +186,7 @@ void MyFFmpeg::start() {
         //队列中最多保存40个packet,
         // 1.防止队列数据过多
         // 2.防止在读取队列完毕后，队列中包含很多数据吗，此时seek会清空数据，这个时候会导致播放退出
+        // 3.比如在暂停状态，播放器没有去取avpacket这个时候不设置阈值会导致内存不断增大
         if (myAudio->queue->getQueueSize() > 40) {
             continue;
         }
@@ -217,14 +221,12 @@ void MyFFmpeg::start() {
                 }
             }
         }
-
     }
 
-    {
-        LOGD("解码完成");
-    }
 
+    LOGD("解码完成");
     if (callJava != NULL) {
+        //此时opensl还没播放完毕？？
         callJava->onCallCompelet(CHILD_THREAD);
     }
     exit = true;
@@ -246,11 +248,16 @@ void MyFFmpeg::resume() {
 
 void MyFFmpeg::release() {
 
+    //在播放的时候设置playStatus->exit = true;
+    //start方法会把exit置位true 从而就可以退出了
     playStatus->exit = true;
 
     pthread_mutex_lock(&init_mutex);
     int sleepCount = 0;
+    //如果是在prepare阶段，加载网络数据的时候 还没加载成功，这个时候需要停止退出
+    //等待10 秒强制退出
     while (!exit) {
+        LOGE("exit = %d", exit);
         if (sleepCount > 1000) {
             exit = true;
         }
@@ -263,7 +270,7 @@ void MyFFmpeg::release() {
     LOGE("释放 Audio");
 
     if (myAudio != NULL) {
-        myAudio->release();
+        myAudio->release(); //可使opensl中调用stop停止播放pcm数据
         delete (myAudio);
         myAudio = NULL;
     }
@@ -309,4 +316,29 @@ void MyFFmpeg::seek(int sec) {
         }
     }
 
+}
+
+void MyFFmpeg::setVolume(int percent) {
+    if (myAudio != NULL) {
+        myAudio->setVolume(percent);
+    }
+
+}
+
+void MyFFmpeg::setMute(int mute) {
+    if (myAudio != NULL) {
+        myAudio->setMute(mute);
+    }
+}
+
+void MyFFmpeg::setPitch(float pitch) {
+    if (myAudio != NULL) {
+        myAudio->setPitch(pitch);
+    }
+}
+
+void MyFFmpeg::setSpeed(float speed) {
+    if (myAudio != NULL) {
+        myAudio->setSpeed(speed);
+    }
 }

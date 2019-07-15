@@ -12,6 +12,8 @@
 #include "pthread.h"
 #include "../androidplatform/callback/OnLoadCallBack.h"
 #include "../androidplatform/callback/CallJava.h"
+#include "SoundTouch.h"
+using namespace soundtouch;
 
 extern "C"
 {
@@ -38,7 +40,7 @@ public:
     AVFrame *avFrame = NULL;
     int ret = -1;
     uint8_t *buffer = NULL;
-    int data_size = 0;
+    int data_size = 0; //字节数
 
     //opensl es--------------
     SLuint32 sample_rate = 44100;
@@ -56,6 +58,16 @@ public:
     SLObjectItf pcmPlayerObject = NULL;
     SLPlayItf pcmPlayerPlay = NULL;
 
+    //声音
+    SLVolumeItf  pcmVolumePlay = NULL;
+
+    //声道
+    SLMuteSoloItf  pcmMutePlay = NULL;
+
+    int volume_percent = 50 ;
+
+    int mute;
+
     //缓冲器队列接口
     SLAndroidSimpleBufferQueueItf pcmBufferQueue = NULL;
     //opensl es--------------
@@ -68,13 +80,22 @@ public:
     double last_time; //上一次调用时间
     //时间显示
 
+    //变速 变调
+    //SoundTouch
+    SoundTouch *soundTouch = NULL;
+    SAMPLETYPE *sampleBuffer = NULL;
+    bool finish = true;
+    uint8_t *out_buffer = NULL;
+    int nb = 0;
+    int num = 0;
+
 public:
     MyAudio(int index,AVCodecParameters * codecPar,PlayStatus *playStatus,SLuint32 sampleRate,CallJava *callJava);
     ~MyAudio();
 
     void play();
 
-    int resampleAudio();
+    int resampleAudio(void **buf);
 
     void initOpenSLES();
 
@@ -87,6 +108,16 @@ public:
     void stop();
 
     void release();
+
+    void setVolume(int percent);
+
+    void setMute(int mute);
+
+    int getSoundTouchData();
+
+    void setPitch(float pitch);
+
+    void setSpeed(float seed);
 
 };
 

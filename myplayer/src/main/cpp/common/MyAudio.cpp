@@ -15,7 +15,14 @@ MyAudio::MyAudio(int index, AVCodecParameters *codecPar, PlayStatus *playStatus,
     this->playstatus = playStatus;
     this->sample_rate = sampleRate;
     this->callJava = callJava;
-    buffer = (uint8_t *) av_malloc(44100 * 2 * 2);
+    //采样率 * 声道数 * 采样点的大小（字节）
+    buffer = (uint8_t *) av_malloc(sample_rate * 2 * 2);//相当于 sample_rate * 2 * 2 = n， n个 * 1字节元素的数组
+    this->soundTouch = new SoundTouch();
+    sampleBuffer = static_cast<SAMPLETYPE *>(malloc(
+            sample_rate * 2 * 2)); //相当于 sample_rate * 2  = n, n个 * 2字节元素的数组
+
+    soundTouch->setSampleRate(sample_rate);
+    soundTouch->setChannels(2);
 }
 
 MyAudio::~MyAudio() {
@@ -34,10 +41,11 @@ void MyAudio::play() {
     pthread_create(&pthread_play, NULL, decodePlay, this);
 }
 
-int MyAudio::resampleAudio() {
+int MyAudio::resampleAudio(void **buf) {
     while (playstatus != NULL && !playstatus->exit) {
 
         if (queue->getQueueSize() == 0) {
+            //显示加载数据
             if (!playstatus->isLoading) {
                 callJava->onCallLoad(CHILD_THREAD, true);
                 playstatus->isLoading = true;
@@ -72,7 +80,7 @@ int MyAudio::resampleAudio() {
         }
 
         avFrame = av_frame_alloc();
-        //从解码器中接收解码后的avframe数据
+        //从解码器中接收解码后的avframe数据,获取到解码数据
         ret = avcodec_receive_frame(codecContext, avFrame);
         //重采样
         if (ret == 0) {
@@ -115,16 +123,17 @@ int MyAudio::resampleAudio() {
             //返回每一个通道的采样个数
             // pcm大小= 采样个数 * 通道数 * 采样点的大小
             //一般情况下 nb = avFrame->nb_samples
-            int nb = swr_convert(
+            nb = swr_convert(
                     swr_ctx,
-                    &buffer, //转码后输出pcm的数据
-                    avFrame->nb_samples,//输出采样个数
+                    &buffer, //转码后输出pcm的数据(pcm裸流)
+                    avFrame->nb_samples,//输出采样个数 需要一致
                     (const uint8_t **) avFrame->data,//原始数据
-                    avFrame->nb_samples);//输入采样个数
+                    avFrame->nb_samples);//输入采样个数 需要一致
 
             LOGD("nb sample is %d", nb);
 
             int out_channels = av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO);
+            //获取到本次冲采样大小 data_size
             data_size = nb * out_channels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
 
             //fwrite要写入内容的单字节数,要进行写入size字节的数据项的个数
@@ -135,6 +144,7 @@ int MyAudio::resampleAudio() {
                 now_time = clock;
             }
             clock = now_time;
+            *buf = buffer;//获取到重采样的数据
 
             LOGD("data_size is %d,cuurent time = %f", data_size, clock);
             av_packet_free(&avPacket);
@@ -162,22 +172,25 @@ int MyAudio::resampleAudio() {
     return data_size;
 }
 
+//opensl会自动调用pcmBufferCallBack去取出数据
 void pcmBufferCallBack(SLAndroidSimpleBufferQueueItf bf, void *context) {
     MyAudio *audio = (MyAudio *) context;
     if (audio != NULL) {
         //播放重采样数据
-        int buffersize = audio->resampleAudio();
+        int buffersize = audio->getSoundTouchData();
         LOGD("bufferSize = %d,playstatus->exit = %d,queue size = %d", buffersize,
              audio->playstatus->exit, audio->queue->getQueueSize());
         if (buffersize > 0) {
+            //pts时间+当前帧播放需要的时间
             audio->clock += buffersize / ((double) (audio->sample_rate * 2 * 2));
             if (audio->clock - audio->last_time >= 0.1) {
                 audio->last_time = audio->clock;
                 //回调应用层
                 audio->callJava->onCallTimeInfo(CHILD_THREAD, audio->clock, audio->duration);
             }
-            (*audio->pcmBufferQueue)->Enqueue(audio->pcmBufferQueue, (char *) audio->buffer,
-                                              buffersize);
+            //把要播放的buffer入队，播放完毕后会自动调用pcmBufferCallBack方法继续获取buffer
+            (*audio->pcmBufferQueue)->Enqueue(audio->pcmBufferQueue, (char *) audio->sampleBuffer,
+                                              buffersize * 2 * 2);
         }
     }
 }
@@ -185,6 +198,7 @@ void pcmBufferCallBack(SLAndroidSimpleBufferQueueItf bf, void *context) {
 void MyAudio::initOpenSLES() {
 
     SLresult result;
+    //创建引擎
     result = slCreateEngine(&engineObject, 0, 0, 0, 0, 0);
     result = (*engineObject)->Realize(engineObject, SL_BOOLEAN_FALSE);
     result = (*engineObject)->GetInterface(engineObject, SL_IID_ENGINE, &engineEngine);
@@ -203,6 +217,7 @@ void MyAudio::initOpenSLES() {
                 outputMixEnvironmentalReverb, &reverbSettings);
         (void) result;
     }
+
     SLDataLocator_OutputMix outputMix = {SL_DATALOCATOR_OUTPUTMIX, outputMixObject};
     SLDataSink audioSnk = {&outputMix, 0};
 
@@ -214,7 +229,7 @@ void MyAudio::initOpenSLES() {
     SLDataFormat_PCM pcm = {
             SL_DATAFORMAT_PCM,//播放pcm格式的数据
             2,//2个声道（立体声）
-            getCurrentSampleRateForOpensles(sample_rate),//44100hz的频率
+            getCurrentSampleRateForOpensles(sample_rate),//44100hz的频率，设置不对可能会导致播放声速变化
             SL_PCMSAMPLEFORMAT_FIXED_16,//位数 16位
             SL_PCMSAMPLEFORMAT_FIXED_16,//和位数一致就行
             SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT,//立体声（前左前右）
@@ -223,10 +238,10 @@ void MyAudio::initOpenSLES() {
     SLDataSource slDataSource = {&android_queue, &pcm};
 
 
-    const SLInterfaceID ids[1] = {SL_IID_BUFFERQUEUE};
-    const SLboolean req[1] = {SL_BOOLEAN_TRUE};
+    const SLInterfaceID ids[3] = {SL_IID_BUFFERQUEUE, SL_IID_VOLUME, SL_IID_MUTESOLO};
+    const SLboolean req[3] = {SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE};
 
-    (*engineEngine)->CreateAudioPlayer(engineEngine, &pcmPlayerObject, &slDataSource, &audioSnk, 1,
+    (*engineEngine)->CreateAudioPlayer(engineEngine, &pcmPlayerObject, &slDataSource, &audioSnk, 3,
                                        ids, req);
     //初始化播放器
     (*pcmPlayerObject)->Realize(pcmPlayerObject, SL_BOOLEAN_FALSE);
@@ -234,13 +249,20 @@ void MyAudio::initOpenSLES() {
 //  得到接口后调用  获取Player接口
     (*pcmPlayerObject)->GetInterface(pcmPlayerObject, SL_IID_PLAY, &pcmPlayerPlay);
 
+    //得到音量接口
+    (*pcmPlayerObject)->GetInterface(pcmPlayerObject, SL_IID_VOLUME, &pcmVolumePlay);
+
+    //获取声道接口
+    (*pcmPlayerObject)->GetInterface(pcmPlayerObject, SL_IID_MUTESOLO, &pcmMutePlay);
+
 //   注册回调缓冲区 获取缓冲队列接口
     (*pcmPlayerObject)->GetInterface(pcmPlayerObject, SL_IID_BUFFERQUEUE, &pcmBufferQueue);
     //缓冲接口回调
     (*pcmBufferQueue)->RegisterCallback(pcmBufferQueue, pcmBufferCallBack, this);
 //   获取播放状态接口
     (*pcmPlayerPlay)->SetPlayState(pcmPlayerPlay, SL_PLAYSTATE_PLAYING);
-
+    setVolume(volume_percent);
+    //调用播放方法
     pcmBufferCallBack(pcmBufferQueue, this);
 }
 
@@ -354,12 +376,160 @@ void MyAudio::release() {
         codecContext = NULL;
     }
 
+    //ffmpeg传进来的 不给与清空
     if (playstatus != NULL) {
         playstatus = NULL;
     }
 
-    if (callJava != NULL){
+    //ffmpeg传进来的 不给与清空
+    if (callJava != NULL) {
         callJava = NULL;
     }
+
+    if (soundTouch != NULL) {
+        delete soundTouch;
+        soundTouch = NULL;
+    }
+
+    if (sampleBuffer != NULL) {
+        free(sampleBuffer);
+        sampleBuffer = NULL;
+    }
 }
+
+void MyAudio::setVolume(int percent) {
+    volume_percent = percent;
+    if (pcmVolumePlay != NULL) {
+        if (percent > 30) {
+            (*pcmVolumePlay)->SetVolumeLevel(pcmVolumePlay, (100 - percent) * -20);
+        } else if (percent > 25) {
+            (*pcmVolumePlay)->SetVolumeLevel(pcmVolumePlay, (100 - percent) * -22);
+        } else if (percent > 20) {
+            (*pcmVolumePlay)->SetVolumeLevel(pcmVolumePlay, (100 - percent) * -25);
+        } else if (percent > 15) {
+            (*pcmVolumePlay)->SetVolumeLevel(pcmVolumePlay, (100 - percent) * -28);
+        } else if (percent > 10) {
+            (*pcmVolumePlay)->SetVolumeLevel(pcmVolumePlay, (100 - percent) * -30);
+        } else if (percent > 5) {
+            (*pcmVolumePlay)->SetVolumeLevel(pcmVolumePlay, (100 - percent) * -34);
+        } else if (percent > 3) {
+            (*pcmVolumePlay)->SetVolumeLevel(pcmVolumePlay, (100 - percent) * -37);
+        } else if (percent > 0) {
+            (*pcmVolumePlay)->SetVolumeLevel(pcmVolumePlay, (100 - percent) * -40);
+        } else {
+            (*pcmVolumePlay)->SetVolumeLevel(pcmVolumePlay, (100 - percent) * -100);
+        }
+    }
+}
+
+void MyAudio::setMute(int mute) {
+    this->mute = mute;
+    if (pcmMutePlay != NULL) {
+        if (mute == 0)//right
+        {   // 0 右声道  1 左声道
+            // ture 表示打开  false表示关闭对应的通道
+            (*pcmMutePlay)->SetChannelMute(pcmMutePlay, 1, false);
+            (*pcmMutePlay)->SetChannelMute(pcmMutePlay, 0, true);
+        } else if (mute == 1)//left
+        {
+            (*pcmMutePlay)->SetChannelMute(pcmMutePlay, 1, true);
+            (*pcmMutePlay)->SetChannelMute(pcmMutePlay, 0, false);
+        } else if (mute == 2)//center
+        {
+            (*pcmMutePlay)->SetChannelMute(pcmMutePlay, 1, false);
+            (*pcmMutePlay)->SetChannelMute(pcmMutePlay, 0, false);
+        }
+    }
+
+}
+
+int MyAudio::getSoundTouchData() {
+//    while (playstatus != NULL && !playstatus->exit) {
+//        out_buffer = NULL;
+//        if (finish) {
+//            finish = false;
+//            //得到重采样后的数据,bit数据
+//            data_size = resampleAudio(reinterpret_cast<void **>(&out_buffer));
+//            if (data_size > 0) {
+//                //由于ffmpeg得到的是uint8的数据，soundtouch 的输入数据类型为short型
+//                //为16位，因此需要做一下转化，把两个8位 拼接成一个16位
+//                for (int i = 0; i < data_size / 2 + 1; i++) {
+//                    sampleBuffer[i] = (out_buffer[i * 2] | ((out_buffer[i * 2 + 1]) << 8));
+//                }
+//                //输入数据到soundtouch，第二个参数为采样点个数，虽然数据由8位转换到了16位
+//                //此处的采样点个数没有发生变化
+//                soundTouch->putSamples(sampleBuffer, nb);
+//                //返回采样点个数，第二个参数为一次最多可以接收的采样点个数，需要多次获取，才能够把putSample放进去的数据获取完毕
+//                num = soundTouch->receiveSamples(sampleBuffer, data_size / 4);
+//                LOGE("+++++++++++++++++++++++++size of num1  = %d,size/4 = %d",num,data_size / 4);
+//            } else {
+//                soundTouch->flush();
+//            }
+//        }
+//
+//
+//        if (num == 0) {
+//            finish = true;
+//            LOGE("----continue--------");
+//            continue;
+//        } else {
+//            if (out_buffer == NULL) {
+//                LOGE("================is finish =%d ,num = %d",finish,num);
+//                num = soundTouch->receiveSamples(sampleBuffer, data_size / 4);
+//                LOGE("2222222222222222222222222222size of num2  = %d,size/4 = %d",num,data_size / 4);
+//                if (num == 0) {
+//                    finish = true;
+//                    continue;
+//                }
+//
+//            }
+//            LOGE("return --- num = %d,finish = %d",num,finish);
+//            return num;
+//        }
+//
+//    }
+//    return 0;
+
+
+
+    while (playstatus != NULL && !playstatus->exit) {
+        out_buffer = NULL;
+        //得到重采样后的数据,bit数据
+        data_size = resampleAudio(reinterpret_cast<void **>(&out_buffer));
+        if (data_size > 0) {
+            //由于ffmpeg得到的是uint8的数据，soundtouch 的输入数据类型为short型
+            //为16位，因此需要做一下转化，把两个8位 拼接成一个16位
+            for (int i = 0; i < data_size / 2 + 1; i++) {
+                sampleBuffer[i] = (out_buffer[i * 2] | ((out_buffer[i * 2 + 1]) << 8));
+            }
+            //输入数据到soundtouch，第二个参数为采样点个数，虽然数据由8位转换到了16位
+            //此处的采样点个数没有发生变化
+            soundTouch->putSamples(sampleBuffer, nb);
+            //返回采样点个数，第二个参数为一次最多可以接收的采样点个数，需要多次获取，才能够把putSample放进去的数据获取完毕
+            //此处一次性读取完毕
+            num = soundTouch->receiveSamples(sampleBuffer, data_size / 4);
+            if (num > 0) {
+                return num;
+            }
+        } else {
+            soundTouch->flush();
+        }
+    }
+    return 0;
+}
+
+void MyAudio::setPitch(float pitch) {
+    if (soundTouch != NULL) {
+        soundTouch->setPitch(pitch);
+    }
+}
+
+void MyAudio::setSpeed(float speed) {
+    if (soundTouch != NULL) {
+        soundTouch->setTempo(speed);
+    }
+}
+
+
+
 
