@@ -10,7 +10,6 @@
 #include "AVPacketQueue.h"
 #include "PlayStatus.h"
 #include "pthread.h"
-#include "../androidplatform/callback/OnLoadCallBack.h"
 #include "../androidplatform/callback/CallJava.h"
 #include "SoundTouch.h"
 using namespace soundtouch;
@@ -75,7 +74,7 @@ public:
     //时间显示
     int duration = 0;
     AVRational time_base;
-    double clock;//总的播放时长
+    double clock;//
     double now_time;//当前frame时间
     double last_time; //上一次调用时间
     //时间显示

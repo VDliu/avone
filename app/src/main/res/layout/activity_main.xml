@@ -6,6 +6,11 @@
     android:orientation="vertical"
     tools:context=".MainActivity">
 
+    <com.av.myplayer.gl.view.MySurfaceView
+        android:id="@+id/surface"
+        android:layout_width="1080px"
+        android:layout_height="500px" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -63,12 +68,13 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:text="播放时间" />
+
     <SeekBar
         android:id="@+id/seek_bar"
-        android:layout_marginTop="20dp"
-        android:max="100"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:max="100" />
 
     <TextView
         android:id="@+id/tv_volume"
@@ -76,37 +82,43 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:text="音量设置" />
+
     <SeekBar
         android:id="@+id/seek_bar_volume"
-        android:layout_marginTop="20dp"
-        android:max="100"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:max="100" />
+
     <TextView
         android:id="@+id/current_mute"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
+
         <Button
             android:id="@+id/left_mute"
-            android:layout_weight="1"
             android:layout_width="0dp"
-            android:text="左声道"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="左声道" />
+
         <Button
             android:id="@+id/right_mute"
-            android:layout_weight="1"
-            android:text="右声道"
             android:layout_width="0dp"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="右声道" />
+
         <Button
             android:id="@+id/center_mute"
-            android:layout_weight="1"
             android:layout_width="0dp"
-            android:text="立体声"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="立体声" />
     </LinearLayout>
 
 
@@ -114,33 +126,38 @@
         android:id="@+id/voice_tv"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
+
         <Button
             android:id="@+id/pitch_btn"
-            android:layout_weight="1"
             android:layout_width="0dp"
-            android:text="变调"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="变调" />
+
         <Button
             android:id="@+id/normal_btn"
-            android:layout_weight="1"
-            android:text="正常"
             android:layout_width="0dp"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="正常" />
+
         <Button
             android:id="@+id/speed_btn"
-            android:layout_weight="1"
             android:layout_width="0dp"
-            android:text="变速"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="变速" />
+
         <Button
             android:id="@+id/speed_pitch"
-            android:layout_weight="1"
-            android:text="变速变调"
             android:layout_width="0dp"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="变速变调" />
     </LinearLayout>
 
 </LinearLayout>

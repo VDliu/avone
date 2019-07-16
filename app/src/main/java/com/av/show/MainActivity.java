@@ -13,6 +13,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.av.myplayer.bean.TimeInfoBean;
+import com.av.myplayer.gl.view.MySurfaceView;
 import com.av.myplayer.listener.OnComplete;
 import com.av.myplayer.listener.OnErrorListener;
 import com.av.myplayer.listener.OnLoadListener;
@@ -49,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     TextView tv_time;
     private MyPlayer player;
+    private MySurfaceView surfaceView;
     private final static String SDCARD = "/storage/emulated/0";
     private static String[] PERMISSIONS_STORAGE = {
             "android.permission.READ_EXTERNAL_STORAGE",
@@ -83,6 +85,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Log.e(TAG, "onCreate: ==" + Environment.getExternalStorageDirectory());
 
         player = new MyPlayer();
+        surfaceView = findViewById(R.id.surface);
+        player.setSurfaceView(surfaceView);
+
         seekBar = findViewById(R.id.seek_bar);
         begin_btn = findViewById(R.id.begin_btn);
         pause_btn = findViewById(R.id.pause_btn);
@@ -185,7 +190,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         begin_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                player.setSource("http://mpge.5nd.com/2015/2015-11-26/69708/1.mp3");
+                player.setSource("/mnt/shared/Other/miao.mp4");
+                //player.setSource("http://mpge.5nd.com/2015/2015-11-26/69708/1.mp3");
                 //player.setSource("/storage/emulated/0/a.m4a");
                 //player.setSource("/storage/emulated/0/test.mp3");
                 // player.setSource("http://ngcdn004.cnr.cn/live/dszs/index.m3u8");

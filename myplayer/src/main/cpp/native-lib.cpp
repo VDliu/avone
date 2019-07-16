@@ -2,7 +2,6 @@
 #include <jni.h>
 #include <string>
 #include "pthread.h"
-#include "androidplatform/callback/TestErrorCallBack.h"
 
 pthread_t pthread;
 

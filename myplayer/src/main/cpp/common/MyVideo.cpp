@@ -62,6 +62,13 @@ void *playVideo(void *data) {
         LOGE("子线程解码一个AVframe视频成功");
 
         if (avFrame->format == AV_PIX_FMT_YUV420P) {
+            //获取到音频和视频之间的pts差值时间
+            double diff = video->getFrameDiffTime(avFrame);
+            LOGE("diff is %f", diff);
+
+            av_usleep(video->getDelayTime(diff) * 1000000);
+
+
             LOGE("当前视频是YUV420P格式");
             video->wlCallJava->onCallRenderYUV(
                     video->avCodecContext->width,
@@ -162,4 +169,65 @@ void MyVideo::release() {
 
 MyVideo::~MyVideo() {
 
+}
+
+double MyVideo::getFrameDiffTime(AVFrame *avFrame) {
+    double pts = av_frame_get_best_effort_timestamp(avFrame);
+    if(pts == AV_NOPTS_VALUE)
+    {
+        pts = 0;
+    }
+    pts *= av_q2d(time_base);
+
+    if(pts > 0)
+    {
+        clock = pts;
+    }
+    //如果视频pts为0 使用上一次的clock
+
+    double diff = audio->clock - clock;
+    return diff;
+}
+
+double MyVideo::getDelayTime(double diff) {
+    if(diff > 0.003) //音频比视频快 减少视频休眠时间
+    {
+        LOGE("delay time =%f",delayTime);
+        delayTime = delayTime * 2 / 3;
+        if(delayTime < defaultDelayTime / 2)
+        {
+            delayTime = defaultDelayTime * 2 / 3;
+        }
+        else if(delayTime > defaultDelayTime * 2)
+        {
+            delayTime = defaultDelayTime * 2;
+        }
+    }
+    else if(diff < - 0.003)//音频比视频慢 加长视频休眠时间
+    {
+        delayTime = delayTime * 3 / 2;
+        if(delayTime < defaultDelayTime / 2)
+        {
+            delayTime = defaultDelayTime * 2 / 3;
+        }
+        else if(delayTime > defaultDelayTime * 2)
+        {
+            delayTime = defaultDelayTime * 2;
+        }
+    }
+
+    if(diff >= 0.5)
+    {
+        delayTime = 0; //音频比视频快 0.5秒  视频不休眠
+    }
+    else if(diff <= -0.5)
+    {
+        delayTime = defaultDelayTime * 2;
+    }
+
+    if(fabs(diff) >= 10)
+    {
+        delayTime = defaultDelayTime;
+    }
+    return delayTime;
 }

@@ -1,4 +1,4 @@
-package com.av.myplayer.gl.render;
+package com.av.show.render;
 
 import android.content.Context;
 import android.opengl.GLES20;
@@ -9,7 +9,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 
 public class ShaderUtils {
-    private static final String TAG = "ShaderUtils";
 
 
     public static String readRawTxt(Context context, int rawId) {
@@ -29,7 +28,6 @@ public class ShaderUtils {
     }
 
     public static int loadShader(int shaderType, String source) {
-        Log.e(TAG, "loadShader: source =" +source );
         int shader = GLES20.glCreateShader(shaderType);
         if (shader != 0) {
             GLES20.glShaderSource(shader, source);
@@ -37,6 +35,7 @@ public class ShaderUtils {
             int[] compile = new int[1];
             GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compile, 0);
             if (compile[0] != GLES20.GL_TRUE) {
+                Log.d("ywl5320", "shader compile error");
                 GLES20.glDeleteShader(shader);
                 shader = 0;
             }
@@ -61,6 +60,7 @@ public class ShaderUtils {
             int[] linsStatus = new int[1];
             GLES20.glGetProgramiv(program, GLES20.GL_LINK_STATUS, linsStatus, 0);
             if (linsStatus[0] != GLES20.GL_TRUE) {
+                Log.d("ywl5320", "link program error");
                 GLES20.glDeleteProgram(program);
                 program = 0;
             }

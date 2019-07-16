@@ -9,6 +9,7 @@
 #include <callback/CallJava.h>
 #include "AVPacketQueue.h"
 #include "PlayStatus.h"
+#include "MyAudio.h"
 
 extern "C"
 {
@@ -29,10 +30,14 @@ public:
     PlayStatus *playstatus = NULL;
     CallJava *wlCallJava = NULL;
     AVRational time_base;
+    MyAudio *audio;
 
 
     pthread_t thread_play;
 
+    double clock = 0;
+    double delayTime = 0;
+    double defaultDelayTime = 0.04;
 
 
 public:
@@ -42,11 +47,11 @@ public:
 
     void play();
 
+    double getFrameDiffTime(AVFrame *avFrame);
+
+    double getDelayTime(double diff);
+
     void release();
-
-
-
-
 
 };
 

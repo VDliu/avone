@@ -104,6 +104,15 @@ void MyFFmpeg::decodeFFmepg() {
                 myVideo->streamIndex = i;
                 myVideo->codecpar = pFormatCtx->streams[i]->codecpar;
                 myVideo->time_base = pFormatCtx->streams[i]->time_base;
+
+                //获取到视频的fps
+                int num = pFormatCtx->streams[i]->avg_frame_rate.num;
+                int den = pFormatCtx->streams[i]->avg_frame_rate.den;
+                if(num != 0 && den != 0)
+                {
+                    int fps = num / den;//[25 / 1]
+                    myVideo->defaultDelayTime = 1.0 / fps; //默认两帧间隔时间
+                }
             }
         }
     }
@@ -182,6 +191,13 @@ void MyFFmpeg::start() {
         LOGE("audio is null");
         return;
     }
+
+    if (myVideo == NULL) {
+        LOGE("video is null");
+        return;
+    }
+    myVideo->audio = myAudio;
+
     //单独线程重采样，然后播放
     myAudio->play();
     myVideo->play();

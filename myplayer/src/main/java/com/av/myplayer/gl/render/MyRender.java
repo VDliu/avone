@@ -24,6 +24,20 @@ public class MyRender implements GLSurfaceView.Renderer {
     private boolean isprint = false;
 
     /**
+     * 音视频同步
+     *
+     * 音频播放时长 固定：由采样率 通道数 位深度 决定/ all data /
+     *
+     * 视频播放时长 ->与两帧之间的渲染间隔相关
+     *
+     * 由于人对声音敏感 所以固定声音播放 视频播放去同步音频播放
+     *
+     *
+     * 视频快了就休眠久一点 视频慢了就休眠短一点
+     */
+
+
+    /**
      * 顶点坐标范围-1 ~1,归一化坐标，独立于屏幕坐标，此时注意正交投影问题
      * 1
      * <p>
@@ -56,6 +70,7 @@ public class MyRender implements GLSurfaceView.Renderer {
             0f, 0f, // top left
             1f, 0f,  // top right
     };
+
 
     private FloatBuffer vertexBuffer;
     private int programYUV;
@@ -135,10 +150,6 @@ public class MyRender implements GLSurfaceView.Renderer {
 
     @Override
     public void onDrawFrame(GL10 gl10) {
-//        if (!isprint) {
-//            Log.e(TAG, "onDrawFrame: ");
-//            isprint = true;
-//        }
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         renderYuv();
@@ -167,8 +178,6 @@ public class MyRender implements GLSurfaceView.Renderer {
             //设置纹理位置值
             GLES20.glVertexAttribPointer(afPosition, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
 
-            //------------------------------------------------//
-
 
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureYuv[0]);
@@ -184,7 +193,7 @@ public class MyRender implements GLSurfaceView.Renderer {
 
             //传递纹理到fragment
             //通过赋值，可以指定sampler与纹理单元的关系，
-            // 想让sampler对哪个纹理单元GL_TEXTUREi中的纹理进行采样/处理，就给它赋值i，如果纹理是GL_TEXTURE0，就给sampler2D赋值为0，以此类推。
+            //想让sampler对哪个纹理单元GL_TEXTUREi中的纹理进行采样/处理，就给它赋值i，如果纹理是GL_TEXTURE0，就给sampler2D赋值为0，以此类推。
             GLES20.glUniform1i(s_y, 0);
             GLES20.glUniform1i(s_u, 1);
             GLES20.glUniform1i(s_v, 2);
@@ -192,9 +201,6 @@ public class MyRender implements GLSurfaceView.Renderer {
             y.clear();
             u.clear();
             v.clear();
-            y = null;
-            u = null;
-            v = null;
         }
     }
 }

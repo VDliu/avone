@@ -117,7 +117,7 @@ CallJava::~CallJava() {
 
 }
 
-void CallJava::onCallRenderYUV(int width, int height, uint8_t *fy, uint8_t *fu, uint8_t *fv) {
+void CallJava:: onCallRenderYUV(int width, int height, uint8_t *fy, uint8_t *fu, uint8_t *fv) {
     JNIEnv *jniEnv;
     if(javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK)
     {

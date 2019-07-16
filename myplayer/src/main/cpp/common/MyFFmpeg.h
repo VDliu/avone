@@ -2,7 +2,6 @@
 #define AVONE_FFMPEG_H
 
 
-#include "../androidplatform/callback/PrepareCallBack.h"
 #include "pthread.h"
 #include "MyAudio.h"
 #include "PlayStatus.h"
