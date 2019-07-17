@@ -12,6 +12,9 @@
 #include "MyAudio.h"
 #include "pthread.h"
 
+#define CODE_YUV 0
+#define CODE_MEDIACODEC 1
+
 extern "C"
 {
 #include <libavcodec/avcodec.h>
@@ -41,6 +44,8 @@ public:
     double defaultDelayTime = 0.04;
 
     pthread_mutex_t codec_mutex;
+    //默认为软解码
+    int decode_type = CODE_YUV;
 
 
 public:

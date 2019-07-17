@@ -108,8 +108,7 @@ void MyFFmpeg::decodeFFmepg() {
                 //获取到视频的fps
                 int num = pFormatCtx->streams[i]->avg_frame_rate.num;
                 int den = pFormatCtx->streams[i]->avg_frame_rate.den;
-                if(num != 0 && den != 0)
-                {
+                if (num != 0 && den != 0) {
                     int fps = num / den;//[25 / 1]
                     myVideo->defaultDelayTime = 1.0 / fps; //默认两帧间隔时间
                 }
@@ -197,6 +196,13 @@ void MyFFmpeg::start() {
         return;
     }
     myVideo->audio = myAudio;
+    const char *codename = ((const AVCodec *) myVideo->avCodecContext->codec)->name;
+    bool isSurppot = callJava->onCallIsSupportVideo(codename);
+    if (isSurppot) {
+        myVideo->decode_type = CODE_MEDIACODEC;
+    }
+
+    LOGE("当前视频支持硬解码 %d", isSurppot);
 
     //单独线程重采样，然后播放
     myAudio->play();
@@ -258,8 +264,8 @@ void MyFFmpeg::start() {
                 if (myAudio->queue->getQueueSize() > 0 || myVideo->queue->getQueueSize() > 0) {
                     continue;
                 } else {
-                    if(!playStatus->isSeeking) {
-                        av_usleep(1000*500);
+                    if (!playStatus->isSeeking) {
+                        av_usleep(1000 * 500);
                         playStatus->exit = true;
                         break;
                     }
@@ -273,7 +279,7 @@ void MyFFmpeg::start() {
     LOGD("解码完成");
     if (callJava != NULL) {
         //此时opensl还没播放完毕？？
-        av_usleep(1000*200);//保证播放线程先退出
+        av_usleep(1000 * 200);//保证播放线程先退出
         callJava->onCallCompelet(CHILD_THREAD);
     }
 
@@ -282,7 +288,7 @@ void MyFFmpeg::start() {
 }
 
 void MyFFmpeg::pause() {
-    if(playStatus != NULL) {
+    if (playStatus != NULL) {
         playStatus->isPause = true;
     }
 
@@ -293,7 +299,7 @@ void MyFFmpeg::pause() {
 }
 
 void MyFFmpeg::resume() {
-    if(playStatus != NULL) {
+    if (playStatus != NULL) {
         playStatus->isPause = false;
     }
 
@@ -333,10 +339,9 @@ void MyFFmpeg::release() {
     }
 
     LOGE("释放 myVideo");
-    if(myVideo != NULL)
-    {
+    if (myVideo != NULL) {
         myVideo->release();
-        delete(myVideo);
+        delete (myVideo);
         myVideo = NULL;
     }
 
@@ -374,7 +379,7 @@ void MyFFmpeg::seek(int sec) {
             int64_t rel = sec * AV_TIME_BASE;
             //移动到文件seek处
             avformat_seek_file(pFormatCtx, -1, INT64_MIN, rel, INT64_MAX, 0);
-            if(myAudio != NULL) {
+            if (myAudio != NULL) {
                 myAudio->queue->clearQueue();
                 myAudio->clock = 0;
                 myAudio->last_time = 0;
@@ -384,7 +389,7 @@ void MyFFmpeg::seek(int sec) {
                 pthread_mutex_unlock(&myAudio->codec_mutex);
             }
 
-            if(myVideo != NULL){
+            if (myVideo != NULL) {
                 myVideo->queue->clearQueue();
                 myVideo->clock = 0;
                 pthread_mutex_lock(&myVideo->codec_mutex);

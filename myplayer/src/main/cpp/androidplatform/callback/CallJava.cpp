@@ -28,6 +28,7 @@ CallJava::CallJava(_JavaVM *javaVM, JNIEnv *env, jobject *obj) {
     jmid_error = env->GetMethodID(jlz, "onCallError", "(ILjava/lang/String;)V");
     jmid_compelet = env->GetMethodID(jlz, "onCallComplete", "()V");
     jmid_renderyuv = env->GetMethodID(jlz, "onCallRenderYUV", "(II[B[B[B)V");
+    jmid_supportvideo = env->GetMethodID(jlz, "onCallIsSupportMediaCodec", "(Ljava/lang/String;)Z");
 
 }
 
@@ -117,10 +118,9 @@ CallJava::~CallJava() {
 
 }
 
-void CallJava:: onCallRenderYUV(int width, int height, uint8_t *fy, uint8_t *fu, uint8_t *fv) {
+void CallJava::onCallRenderYUV(int width, int height, uint8_t *fy, uint8_t *fu, uint8_t *fv) {
     JNIEnv *jniEnv;
-    if(javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK)
-    {
+    if (javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK) {
         LOGE("call onCallComplete worng");
         return;
     }
@@ -142,6 +142,26 @@ void CallJava:: onCallRenderYUV(int width, int height, uint8_t *fy, uint8_t *fu,
 
     javaVM->DetachCurrentThread();
 
+}
+
+/**
+ * 子线程
+ * @param ffcodecname
+ * @return
+ */
+bool CallJava::onCallIsSupportVideo(const char *ffcodecname) {
+    bool support = false;
+    JNIEnv *jniEnv;
+    if (javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK) {
+        LOGE("call onCallComplete worng");
+        return support;
+    }
+
+    jstring type = jniEnv->NewStringUTF(ffcodecname);
+    support = jniEnv->CallBooleanMethod(jobj, jmid_supportvideo, type);
+    jniEnv->DeleteLocalRef(type);
+    javaVM->DetachCurrentThread();
+    return support;
 }
 
 

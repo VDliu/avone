@@ -1,6 +1,5 @@
 package com.av.myplayer.player;
 
-import android.app.IntentService;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -13,6 +12,7 @@ import com.av.myplayer.listener.OnPauseResumeListener;
 import com.av.myplayer.listener.OnTimeInfoListener;
 import com.av.myplayer.listener.PrepareListener;
 import com.av.myplayer.myLog.MyLog;
+import com.av.myplayer.utils.VideoSupportUitl;
 
 
 public class MyPlayer {
@@ -121,7 +121,7 @@ public class MyPlayer {
         if (errorListener != null) {
             errorListener.onError(code, message);
         }
-        Log.e(TAG, "onCallError: error" );
+        Log.e(TAG, "onCallError: error");
         player_stop();
     }
 
@@ -224,9 +224,13 @@ public class MyPlayer {
     }
 
     public void onCallRenderYUV(int width, int height, byte[] y, byte[] u, byte[] v) {
-        Log.e(TAG, "onCallRenderYUV: ------------" );
+        Log.e(TAG, "onCallRenderYUV: ------------");
 
-        setYuvData(width,height,y,u,v);
+        setYuvData(width, height, y, u, v);
+    }
+
+    public boolean onCallIsSupportMediaCodec(String ffmpegCodeName) {
+        return VideoSupportUitl.isSupportCodec(ffmpegCodeName);
     }
 
 
