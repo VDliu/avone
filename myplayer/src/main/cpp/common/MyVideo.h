@@ -10,6 +10,7 @@
 #include "AVPacketQueue.h"
 #include "PlayStatus.h"
 #include "MyAudio.h"
+#include "pthread.h"
 
 extern "C"
 {
@@ -38,6 +39,8 @@ public:
     double clock = 0;
     double delayTime = 0;
     double defaultDelayTime = 0.04;
+
+    pthread_mutex_t codec_mutex;
 
 
 public:

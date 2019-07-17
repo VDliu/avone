@@ -10,14 +10,16 @@ MyVideo::MyVideo(PlayStatus *playstatus, CallJava *wlCallJava) {
 
     this->playstatus = playstatus;
     this->wlCallJava = wlCallJava;
-    queue = new AVPacketQueue(playstatus);
+    queue = new AVPacketQueue(playstatus,0);
+    pthread_mutex_init(&codec_mutex, NULL);
+
 }
 
 void *playVideo(void *data) {
 
-    MyVideo *video = static_cast<MyVideo *>(data);
+    MyVideo *video = (MyVideo *)(data);
 
-    while (video->playstatus != NULL && !video->playstatus->exit) {
+    while (video != NULL && video->playstatus != NULL && !video->playstatus->exit) {
 
         if (video->playstatus->isSeeking) {
             av_usleep(1000 * 100);
@@ -29,24 +31,37 @@ void *playVideo(void *data) {
                 video->wlCallJava->onCallLoad(CHILD_THREAD, true);
             }
             av_usleep(1000 * 100);
+            LOGE("loading video data");
             continue;
         } else {
             if (video->playstatus->isLoading) {
+                LOGE("loading video data ok");
                 video->playstatus->isLoading = false;
                 video->wlCallJava->onCallLoad(CHILD_THREAD, false);
             }
         }
+
+        //暂停状态
+        if(video->playstatus->isPause){
+            av_usleep(1000 * 100);
+            continue;
+        }
+
         AVPacket *avPacket = av_packet_alloc();
+        LOGE("getting---video-");
         if (video->queue->getAvPacket(avPacket) != 0) {
             av_packet_free(&avPacket);
             av_free(avPacket);
             avPacket = NULL;
             continue;
         }
+        LOGE("send----video");
+        pthread_mutex_lock(&video->codec_mutex);
         if (avcodec_send_packet(video->avCodecContext, avPacket) != 0) {
             av_packet_free(&avPacket);
             av_free(avPacket);
             avPacket = NULL;
+            pthread_mutex_unlock(&video->codec_mutex);
             continue;
         }
         AVFrame *avFrame = av_frame_alloc();
@@ -57,8 +72,10 @@ void *playVideo(void *data) {
             av_packet_free(&avPacket);
             av_free(avPacket);
             avPacket = NULL;
+            pthread_mutex_unlock(&video->codec_mutex);
             continue;
         }
+
         LOGE("子线程解码一个AVframe视频成功");
 
         if (avFrame->format == AV_PIX_FMT_YUV420P) {
@@ -67,15 +84,17 @@ void *playVideo(void *data) {
             LOGE("diff is %f", diff);
 
             av_usleep(video->getDelayTime(diff) * 1000000);
-
-
             LOGE("当前视频是YUV420P格式");
-            video->wlCallJava->onCallRenderYUV(
-                    video->avCodecContext->width,
-                    video->avCodecContext->height,
-                    avFrame->data[0],
-                    avFrame->data[1],
-                    avFrame->data[2]);
+            if(video != NULL) {
+                video->wlCallJava->onCallRenderYUV(
+                        video->avCodecContext->width,
+                        video->avCodecContext->height,
+                        avFrame->data[0],
+                        avFrame->data[1],
+                        avFrame->data[2]);
+                LOGE("view draw ok");
+            }
+
         } else {
             LOGE("当前视频不是YUV420P格式");
             AVFrame *pFrameYUV420P = av_frame_alloc();
@@ -106,6 +125,7 @@ void *playVideo(void *data) {
                 av_frame_free(&pFrameYUV420P);
                 av_free(pFrameYUV420P);
                 av_free(buffer);
+                pthread_mutex_unlock(&video->codec_mutex);
                 continue;
             }
             sws_scale(
@@ -116,28 +136,53 @@ void *playVideo(void *data) {
                     avFrame->height,
                     pFrameYUV420P->data,
                     pFrameYUV420P->linesize);
+
+            //音视频同步
+            double diff = video->getFrameDiffTime(avFrame);
+            LOGE("diff is %f", diff);
+
+            av_usleep(video->getDelayTime(diff) * 1000000);
             //渲染
-            video->wlCallJava->onCallRenderYUV(
-                    video->avCodecContext->width,
-                    video->avCodecContext->height,
-                    pFrameYUV420P->data[0],
-                    pFrameYUV420P->data[1],
-                    pFrameYUV420P->data[2]);
+            if(video != NULL) {
+                video->wlCallJava->onCallRenderYUV(
+                        video->avCodecContext->width,
+                        video->avCodecContext->height,
+                        pFrameYUV420P->data[0],
+                        pFrameYUV420P->data[1],
+                        pFrameYUV420P->data[2]);
+            }
+
 
             av_frame_free(&pFrameYUV420P);
-            av_free(pFrameYUV420P);
-            av_free(buffer);
-            sws_freeContext(sws_ctx);
-        }
 
+            av_free(pFrameYUV420P);
+
+            av_free(buffer);
+
+            sws_freeContext(sws_ctx);
+
+
+        }
+        LOGE("111111");
         av_frame_free(&avFrame);
+        LOGE("2222");
         av_free(avFrame);
+        LOGE("333");
         avFrame = NULL;
         av_packet_free(&avPacket);
+        LOGE("444");
         av_free(avPacket);
+        LOGE("555");
         avPacket = NULL;
+        LOGE("666");
+        pthread_mutex_unlock(&video->codec_mutex);
+        LOGE("777");
     }
-    pthread_exit(&video->thread_play);
+    LOGE("break recycle");
+    if(video != NULL){
+        LOGE("break 00000000");
+        pthread_exit(&(video->thread_play));
+    }
 
 }
 
@@ -152,11 +197,13 @@ void MyVideo::release() {
         delete (queue);
         queue = NULL;
     }
+    pthread_mutex_lock(&codec_mutex);
     if (avCodecContext != NULL) {
         avcodec_close(avCodecContext);
         avcodec_free_context(&avCodecContext);
         avCodecContext = NULL;
     }
+    pthread_mutex_unlock(&codec_mutex);
 
     if (playstatus != NULL) {
         playstatus = NULL;
@@ -168,7 +215,7 @@ void MyVideo::release() {
 }
 
 MyVideo::~MyVideo() {
-
+    pthread_mutex_destroy(&codec_mutex);
 }
 
 double MyVideo::getFrameDiffTime(AVFrame *avFrame) {

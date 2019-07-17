@@ -1,5 +1,6 @@
 package com.av.myplayer.player;
 
+import android.app.IntentService;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -107,6 +108,7 @@ public class MyPlayer {
         if (complete != null) {
             complete.complete();
         }
+
     }
 
     public void setPauseResumeListener(OnPauseResumeListener pauseResumeListener) {
@@ -119,6 +121,7 @@ public class MyPlayer {
         if (errorListener != null) {
             errorListener.onError(code, message);
         }
+        Log.e(TAG, "onCallError: error" );
         player_stop();
     }
 

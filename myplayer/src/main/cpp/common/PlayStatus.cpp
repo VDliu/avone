@@ -10,4 +10,5 @@ PlayStatus::PlayStatus() {
     exit = false;
     isLoading = false;
     isSeeking = false;
+    isPause = false;
 }

@@ -23,9 +23,10 @@ public:
     pthread_cond_t  cond;
     pthread_mutex_t mutex;
     PlayStatus *playStatus = NULL;
+    int type;
 
 public:
-    AVPacketQueue(PlayStatus *playStatus);
+    AVPacketQueue(PlayStatus *playStatus,int type);
     ~AVPacketQueue();
 
     int putAvPacket(AVPacket *avPacket);

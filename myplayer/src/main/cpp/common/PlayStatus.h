@@ -16,6 +16,8 @@ public:
 
     bool isSeeking;
 
+    bool isPause;
+
 public:
     PlayStatus();
 

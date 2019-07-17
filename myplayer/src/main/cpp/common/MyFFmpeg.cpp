@@ -220,15 +220,22 @@ void MyFFmpeg::start() {
         // 1.防止队列数据过多
         // 2.防止在读取队列完毕后，队列中包含很多数据吗，此时seek会清空数据，这个时候会导致播放退出
         // 3.比如在暂停状态，播放器没有去取avpacket这个时候不设置阈值会导致内存不断增大
-//        if (myAudio->queue->getQueueSize() > 40) {
-//            continue;
-//        }
+        if (myAudio->queue->getQueueSize() > 40) {
+            av_usleep(1000 * 100);
+            continue;
+        }
+
+        if (myVideo->queue->getQueueSize() > 40) {
+            av_usleep(1000 * 100);
+            continue;
+        }
 
 
         AVPacket *avPacket = av_packet_alloc();
         pthread_mutex_lock(&seek_mutex);
         int ret = av_read_frame(pFormatCtx, avPacket);
         pthread_mutex_unlock(&seek_mutex);
+
 
         if (ret == 0) {
             //判断是否是音频流
@@ -248,27 +255,37 @@ void MyFFmpeg::start() {
             avPacket = NULL;
             while (playStatus != NULL && !playStatus->exit) {
                 //如果队列中还有数据，需要将数据取完以后再退出
-                if (myAudio->queue->getQueueSize() > 0) {
+                if (myAudio->queue->getQueueSize() > 0 || myVideo->queue->getQueueSize() > 0) {
                     continue;
                 } else {
-                    playStatus->exit = true;
-                    break;
+                    if(!playStatus->isSeeking) {
+                        av_usleep(1000*500);
+                        playStatus->exit = true;
+                        break;
+                    }
                 }
             }
         }
+
     }
 
 
     LOGD("解码完成");
     if (callJava != NULL) {
         //此时opensl还没播放完毕？？
+        av_usleep(1000*200);//保证播放线程先退出
         callJava->onCallCompelet(CHILD_THREAD);
     }
+
     exit = true;
 
 }
 
 void MyFFmpeg::pause() {
+    if(playStatus != NULL) {
+        playStatus->isPause = true;
+    }
+
     if (myAudio != NULL) {
         myAudio->pause();
     }
@@ -276,12 +293,17 @@ void MyFFmpeg::pause() {
 }
 
 void MyFFmpeg::resume() {
+    if(playStatus != NULL) {
+        playStatus->isPause = false;
+    }
+
     if (myAudio != NULL) {
         myAudio->resume();
     }
 }
 
 void MyFFmpeg::release() {
+    LOGE("release--------");
 
     //在播放的时候设置playStatus->exit = true;
     //start方法会把exit置位true 从而就可以退出了
@@ -319,11 +341,13 @@ void MyFFmpeg::release() {
     }
 
     LOGE("释放 封装格式上下文");
+    pthread_mutex_lock(&seek_mutex);
     if (pFormatCtx != NULL) {
         avformat_close_input(&pFormatCtx);
         avformat_free_context(pFormatCtx);
         pFormatCtx = NULL;
     }
+    pthread_mutex_unlock(&seek_mutex);
 
     if (callJava != NULL) {
         callJava = NULL;
@@ -346,16 +370,31 @@ void MyFFmpeg::seek(int sec) {
     if (sec > 0 && sec <= myAudio->duration) {
         if (!playStatus->isSeeking) {
             playStatus->isSeeking = true;
-            //清空queue
-            myAudio->queue->clearQueue();
-            myAudio->clock = 0;
-            myAudio->last_time = 0;
             pthread_mutex_lock(&seek_mutex);
             int64_t rel = sec * AV_TIME_BASE;
             //移动到文件seek处
             avformat_seek_file(pFormatCtx, -1, INT64_MIN, rel, INT64_MAX, 0);
+            if(myAudio != NULL) {
+                myAudio->queue->clearQueue();
+                myAudio->clock = 0;
+                myAudio->last_time = 0;
+                //情况缓存
+                pthread_mutex_lock(&myAudio->codec_mutex);
+                avcodec_flush_buffers(myAudio->codecContext);
+                pthread_mutex_unlock(&myAudio->codec_mutex);
+            }
+
+            if(myVideo != NULL){
+                myVideo->queue->clearQueue();
+                myVideo->clock = 0;
+                pthread_mutex_lock(&myVideo->codec_mutex);
+                avcodec_flush_buffers(myVideo->avCodecContext);
+                pthread_mutex_unlock(&myVideo->codec_mutex);
+            }
+
             pthread_mutex_unlock(&seek_mutex);
             playStatus->isSeeking = false;
+
         }
     }
 
@@ -392,7 +431,6 @@ int MyFFmpeg::getCodecContext(AVCodecParameters *codecpar, AVCodecContext **avCo
         LOGE("can not find decoder");
         callJava->onCallError(CHILD_THREAD, 1003, "can not find decoder");
         exit = true;
-        pthread_mutex_unlock(&init_mutex);
         return -1;
     }
 
@@ -401,14 +439,12 @@ int MyFFmpeg::getCodecContext(AVCodecParameters *codecpar, AVCodecContext **avCo
         LOGE("can not alloc new decodecctx");
         callJava->onCallError(CHILD_THREAD, 1004, "can not alloc new decodecctx");
         exit = true;
-        pthread_mutex_unlock(&init_mutex);
         return -1;
     }
 
     if (avcodec_parameters_to_context(*avCodecContext, codecpar) < 0) {
         callJava->onCallError(CHILD_THREAD, 1005, "ccan not fill decodecctx");
         exit = true;
-        pthread_mutex_unlock(&init_mutex);
         return -1;
     }
 
@@ -416,7 +452,6 @@ int MyFFmpeg::getCodecContext(AVCodecParameters *codecpar, AVCodecContext **avCo
         LOGE("cant not open audio strames");
         callJava->onCallError(CHILD_THREAD, 1006, "cant not open audio strames");
         exit = true;
-        pthread_mutex_unlock(&init_mutex);
         return -1;
     }
     return 0;

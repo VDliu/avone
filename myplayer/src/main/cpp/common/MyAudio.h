@@ -12,21 +12,23 @@
 #include "pthread.h"
 #include "../androidplatform/callback/CallJava.h"
 #include "SoundTouch.h"
+
 using namespace soundtouch;
 
 extern "C"
 {
-    #include <libavformat/avformat.h>
-    #include <libswresample/swresample.h>
-    #include <SLES/OpenSLES.h>
-    #include <SLES/OpenSLES_Android.h>
+#include <libavformat/avformat.h>
+#include <libswresample/swresample.h>
+#include <SLES/OpenSLES.h>
+#include <SLES/OpenSLES_Android.h>
+#include <libavutil/time.h>
 }
 
 class MyAudio {
 
 public:
     int streamIndex = -1;
-    AVCodecParameters * codecParameters = NULL;
+    AVCodecParameters *codecParameters = NULL;
     AVCodecContext *codecContext = NULL;
     AVPacketQueue *queue = NULL;
     PlayStatus *playstatus = NULL;
@@ -58,12 +60,12 @@ public:
     SLPlayItf pcmPlayerPlay = NULL;
 
     //声音
-    SLVolumeItf  pcmVolumePlay = NULL;
+    SLVolumeItf pcmVolumePlay = NULL;
 
     //声道
-    SLMuteSoloItf  pcmMutePlay = NULL;
+    SLMuteSoloItf pcmMutePlay = NULL;
 
-    int volume_percent = 50 ;
+    int volume_percent = 50;
 
     int mute;
 
@@ -88,8 +90,12 @@ public:
     int nb = 0;
     int num = 0;
 
+    pthread_mutex_t codec_mutex;
+
 public:
-    MyAudio(int index,AVCodecParameters * codecPar,PlayStatus *playStatus,SLuint32 sampleRate,CallJava *callJava);
+    MyAudio(int index, AVCodecParameters *codecPar, PlayStatus *playStatus, SLuint32 sampleRate,
+            CallJava *callJava);
+
     ~MyAudio();
 
     void play();

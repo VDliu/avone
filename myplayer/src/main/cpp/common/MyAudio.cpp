@@ -7,11 +7,12 @@
 #include "MyAudio.h"
 #include "../androidplatform/MyLog.h"
 
+
 MyAudio::MyAudio(int index, AVCodecParameters *codecPar, PlayStatus *playStatus,
                  SLuint32 sampleRate, CallJava *callJava) {
     this->streamIndex = index;
     this->codecParameters = codecPar;
-    this->queue = new AVPacketQueue(playStatus);
+    this->queue = new AVPacketQueue(playStatus,1);
     this->playstatus = playStatus;
     this->sample_rate = sampleRate;
     this->callJava = callJava;
@@ -23,9 +24,11 @@ MyAudio::MyAudio(int index, AVCodecParameters *codecPar, PlayStatus *playStatus,
 
     soundTouch->setSampleRate(sample_rate);
     soundTouch->setChannels(2);
+    pthread_mutex_init(&codec_mutex,NULL);
 }
 
 MyAudio::~MyAudio() {
+    pthread_mutex_destroy(&codec_mutex);
 
 }
 
@@ -42,6 +45,7 @@ void MyAudio::play() {
 }
 
 int MyAudio::resampleAudio(void **buf) {
+    data_size = 0;
     while (playstatus != NULL && !playstatus->exit) {
 
         if (queue->getQueueSize() == 0) {
@@ -49,20 +53,23 @@ int MyAudio::resampleAudio(void **buf) {
             if (!playstatus->isLoading) {
                 callJava->onCallLoad(CHILD_THREAD, true);
                 playstatus->isLoading = true;
-                LOGE("loading ----");
+
             }
+            LOGE("loading audio----");
+            av_usleep(1000 * 100);
             continue;
 
         } else {
             if (playstatus->isLoading) {
                 playstatus->isLoading = false;
                 callJava->onCallLoad(CHILD_THREAD, false);
-                LOGE("loading ----ok");
+                LOGE("loading audio ----ok");
             }
         }
 
 
         avPacket = av_packet_alloc();
+        LOGE("getting audio");
         if (queue->getAvPacket(avPacket) != 0) {
             av_packet_free(&avPacket);
             av_free(avPacket);
@@ -70,12 +77,15 @@ int MyAudio::resampleAudio(void **buf) {
             continue;
         }
 
+        LOGE("sending audio");
         //把avPacket放到解码器中进行解码
+        pthread_mutex_lock(&codec_mutex);
         ret = avcodec_send_packet(codecContext, avPacket);
         if (ret != 0) {
             av_packet_free(&avPacket);
             av_free(avPacket);
             avPacket = NULL;
+            pthread_mutex_unlock(&codec_mutex);
             continue;
         }
 
@@ -117,6 +127,7 @@ int MyAudio::resampleAudio(void **buf) {
                 if (swr_ctx != NULL) {
                     swr_free(&swr_ctx);
                 }
+                pthread_mutex_unlock(&codec_mutex);
                 continue;
             }
 
@@ -155,6 +166,7 @@ int MyAudio::resampleAudio(void **buf) {
             avFrame = NULL;
             swr_free(&swr_ctx);
             //每当冲采样成功一次，交给opensl es播放，播放完毕以后再继续重新采样
+            pthread_mutex_unlock(&codec_mutex);
             break;
 
         } else {
@@ -164,6 +176,7 @@ int MyAudio::resampleAudio(void **buf) {
             av_frame_free(&avFrame);
             av_free(avFrame);
             avFrame = NULL;
+            pthread_mutex_unlock(&codec_mutex);
             continue;
         }
 
@@ -177,20 +190,20 @@ void pcmBufferCallBack(SLAndroidSimpleBufferQueueItf bf, void *context) {
     MyAudio *audio = (MyAudio *) context;
     if (audio != NULL) {
         //播放重采样数据
-        int buffersize = audio->getSoundTouchData();
-        LOGD("bufferSize = %d,playstatus->exit = %d,queue size = %d", buffersize,
+        int sampleNumbers = audio->getSoundTouchData();
+        LOGD("bufferSize = %d,playstatus->exit = %d,queue size = %d", sampleNumbers,
              audio->playstatus->exit, audio->queue->getQueueSize());
-        if (buffersize > 0) {
+        if (sampleNumbers > 0) {
             //pts时间+当前帧播放需要的时间
-            audio->clock += buffersize / ((double) (audio->sample_rate * 2 * 2));
-            if (audio->clock - audio->last_time >= 0.1) {
+            audio->clock += sampleNumbers / ((double) (audio->sample_rate * 2 * 2));
+            if (audio->clock - audio->last_time >= 0.05) {
                 audio->last_time = audio->clock;
                 //回调应用层
                 audio->callJava->onCallTimeInfo(CHILD_THREAD, audio->clock, audio->duration);
             }
             //把要播放的buffer入队，播放完毕后会自动调用pcmBufferCallBack方法继续获取buffer
             (*audio->pcmBufferQueue)->Enqueue(audio->pcmBufferQueue, (char *) audio->sampleBuffer,
-                                              buffersize * 2 * 2);
+                                              sampleNumbers * 2 * 2);
         }
     }
 }
@@ -371,10 +384,12 @@ void MyAudio::release() {
     }
 
     //释放解码上下文
+    pthread_mutex_lock(&codec_mutex);
     if (codecContext != NULL) {
         avcodec_free_context(&codecContext);
         codecContext = NULL;
     }
+    pthread_mutex_unlock(&codec_mutex);
 
     //ffmpeg传进来的 不给与清空
     if (playstatus != NULL) {

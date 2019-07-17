@@ -154,20 +154,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
                 is_progress_seek = true;
-                player.pause();
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 player.seek(seek_time);
-                player.resume();
                 is_progress_seek = false;
             }
         });
         seek_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                player.seek(210);
+                player.seek(5);
             }
         });
 
@@ -191,6 +189,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onClick(View view) {
                 player.setSource("/mnt/shared/Other/miao.mp4");
+                String str = Environment.getExternalStorageDirectory().toString() +"/test.mp4" ;
+                Log.e(TAG, "onClick: str =" + str);
                 //player.setSource("http://mpge.5nd.com/2015/2015-11-26/69708/1.mp3");
                 //player.setSource("/storage/emulated/0/a.m4a");
                 //player.setSource("/storage/emulated/0/test.mp3");
@@ -248,7 +248,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 + "/" + TimeUtils.secdsToDateFormat(timeInfoBean.getCurrentTime(), timeInfoBean.getTotalTime()));
                         if (is_progress_seek) return;
                         double time = (double) timeInfoBean.getCurrentTime() / (double) player.getDuration() * 100;
-                        seekBar.setProgress((int) time);
+                        //seekBar.setProgress((int) time);
                     }
                 });
 

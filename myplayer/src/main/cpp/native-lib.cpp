@@ -86,8 +86,8 @@ Java_com_av_myplayer_player_MyPlayer_player_1stop(JNIEnv *env, jobject instance)
         return;
     }
     //调用下一曲
-    jclass clss = env->GetObjectClass(instance);
-    jmethodID next_method = env->GetMethodID(clss, "onCallNext", "()V");
+//    jclass clss = env->GetObjectClass(instance);
+//    jmethodID next_method = env->GetMethodID(clss, "onCallNext", "()V");
     n_exit = false;
 
     if (myFFmpeg != NULL) {
@@ -107,7 +107,7 @@ Java_com_av_myplayer_player_MyPlayer_player_1stop(JNIEnv *env, jobject instance)
     }
     n_exit = true;
 
-    env->CallVoidMethod(instance, next_method);
+   // env->CallVoidMethod(instance, next_method);
 
 }
 

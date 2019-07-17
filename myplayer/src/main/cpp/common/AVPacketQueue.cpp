@@ -7,10 +7,11 @@
 #include "AVPacketQueue.h"
 #include "../androidplatform/MyLog.h"
 
-AVPacketQueue::AVPacketQueue(PlayStatus *playStatus) {
+AVPacketQueue::AVPacketQueue(PlayStatus *playStatus,int type) {
     this->playStatus = playStatus;
     pthread_mutex_init(&mutex, NULL);
     pthread_cond_init(&cond, NULL);
+    this->type = type;
 }
 
 AVPacketQueue::~AVPacketQueue() {
@@ -44,7 +45,7 @@ int AVPacketQueue::getAvPacket(AVPacket *avPacket) {
             av_packet_free(&packet);
             av_free(packet);
             packet = NULL;
-            LOGD("get avpacket ok ,the rest data of queue is = %d", avPackQueue.size());
+            LOGD("get avpacket ok ,the rest data of queue is = %d,type = %ld", avPackQueue.size(),type);
             break;
         } else {
             //1.先释放锁
@@ -52,6 +53,7 @@ int AVPacketQueue::getAvPacket(AVPacket *avPacket) {
             //pthread_cond_wait前要先加锁
             //pthread_cond_wait内部会解锁，然后等待条件变量被其它线程激活
               //      pthread_cond_wait被激活后会再自动加锁
+            LOGE("no packet waitting %d ",type);
             pthread_cond_wait(&cond, &mutex);
         }
     }
